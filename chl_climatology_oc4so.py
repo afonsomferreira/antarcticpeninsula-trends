@@ -23,9 +23,9 @@ def serial_date_to_string(srl_no):
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
 #os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\rrs\\')
+os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
 ### Load data 1998-2020
-fh = np.load('chloc4so_8day.npz', allow_pickle=True)
+fh = np.load('chloc4so_19972021.npz', allow_pickle=True)
 lat = fh['lat']
 lon = fh['lon']
 chl = fh['chl']
@@ -35,24 +35,20 @@ time_date_months = np.empty_like(time_date)
 for i in range(0, len(time_date)):
     time_date_years[i] = time_date[i].year
     time_date_months[i] = time_date[i].month
-# Load data 2012-13
-fh = np.load('chloc4so_8day_20122013.npz', allow_pickle=True)
-chl_20122013 = fh['chl']
-# Replace 2012-2013 in original chl
-chl[:,:, 644:736] = chl_20122013
+# Correct values
 chl[chl > 100] = 100
 # Calculate climatology
-chl_clim19982020 = np.nanmean(chl, 2)
+chl_clim19972021 = np.nanmean(chl, 2)
 # Plot Climatology
 plt.figure()
 map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
 map.set_extent([-67, -53, -67, -60])
-f1 = map.pcolormesh(lon, lat, np.log10(chl_clim19982020[:-1, :-1]), transform=ccrs.PlateCarree(), shading='flat', vmin=np.log10(0.01),
-                    vmax=np.log10(10), cmap=cmocean.cm.algae,)
+f1 = map.pcolormesh(lon, lat, np.log10(chl_clim19972021[:-1, :-1]), transform=ccrs.PlateCarree(), shading='flat', vmin=np.log10(0.1),
+                    vmax=np.log10(10), cmap=plt.cm.viridis)
 gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
-cbar = plt.colorbar(f1, ticks=[np.log10(0.01), np.log10(0.05), np.log10(0.1), np.log10(0.5), np.log10(1), np.log10(3), np.log10(10)],
+cbar = plt.colorbar(f1, ticks=[np.log10(0.1), np.log10(0.5), np.log10(1), np.log10(3), np.log10(10)],
                     fraction=0.04, pad=0.1)
-cbar.ax.set_yticklabels(['0.01', '0.05', '0.1', '0.5', '1', '3', '10'], fontsize=14)
+cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
 cbar.set_label('Chl-$\it{a}$ (mg.m$^{-3}$)', fontsize=14)
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 map.coastlines(resolution='10m', color='black', linewidth=1)
@@ -60,52 +56,10 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         edgecolor='k',
                                         facecolor=cartopy.feature.COLORS['land']))
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\climatology19982020.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\climatology19972021.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
-# Calculate data availability for each pixel
-chl_validpixels = chl[:,:,0]*np.nan
-chl_validpixels_percentage = chl_validpixels
-for i in range(0, len(lat)):
-    for j in range(0, len(lon)):
-        chl_validpixels[i,j] = np.count_nonzero(~np.isnan(chl[i, j, :]))
-        chl_validpixels_percentage[i,j] = (np.count_nonzero(~np.isnan(chl[i, j, :])) / 1057)*100
-# Plot valid pixels
-plt.figure()
-map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
-map.coastlines(resolution='10m', color='black', linewidth=1)
-map.set_extent([-67, -53, -67, -60])
-map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
-                                        edgecolor='k',
-                                        facecolor=cartopy.feature.COLORS['land']))
-f1 = map.pcolormesh(lon, lat, chl_validpixels, transform=ccrs.PlateCarree(), shading='flat', cmap=cmocean.cm.haline)
-gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
-cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
-#cbar.ax.set_yticklabels(fontsize=14)
-cbar.set_label('Valid Pixels', fontsize=14)
-#cbar.set_label('Valid Pixels (%)', fontsize=14)
-plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chl_validpixels_9982020.png'
-plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
-plt.close()
-# Plot valid pixels (percentage %)
-plt.figure()
-map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
-map.coastlines(resolution='10m', color='black', linewidth=1)
-map.set_extent([-67, -53, -67, -60])
-map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
-                                        edgecolor='k',
-                                        facecolor=cartopy.feature.COLORS['land']))
-f1 = map.pcolormesh(lon, lat, chl_validpixels_percentage, transform=ccrs.PlateCarree(), shading='flat', cmap=cmocean.cm.haline)
-gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
-cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
-#cbar.ax.set_yticklabels(fontsize=14)
-cbar.set_label('Valid Pixels (%)', fontsize=14)
-#cbar.set_label('Valid Pixels (%)', fontsize=14)
-plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chl_validpixelspercentage_9982020.png'
-plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
-plt.close()
+#%%
 ### Calculate monthly means
 chl_jan19982020_clim = np.nanmean(chl[:,:, time_date_months == 1],2)
 chl_feb19982020_clim = np.nanmean(chl[:,:, time_date_months == 2],2)

@@ -51,6 +51,7 @@ for i in np.arange(1999, 2021):
         years_summermeans = yeartemp_summermean
     else:
         years_summermeans = np.dstack((years_summermeans, yeartemp_summermean))
+#%%
 ### Calculate linear trend for each pixel
 yearchar = np.arange(1999, 2021)
 chl_summertrend19992020 = np.empty((np.size(lat), np.size(lon)))*np.nan
@@ -71,10 +72,31 @@ for i in range(0, len(lat)):
         # add slope value (i.e. change in chl per year) to pixel
         if pvalue < 0.05:
             chl_summertrend19992020[i,j] = slope
-        
+#%%        
 # Plot Climatology
-chl_summertrend19992020[chl_summertrend19992020>1] = np.nan
-chl_summertrend19992020[chl_summertrend19992020<-1] = np.nan
+#chl_summertrend19992020[chl_summertrend19992020>1] = np.nan
+#chl_summertrend19992020[chl_summertrend19992020<-1] = np.nan
+plt.figure()
+map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
+map.set_extent([-67, -53, -67, -60])
+f1 = map.pcolormesh(lon_10km, lat_10km, np.log10(chl_10km_clim[:-1, :-1]), transform=ccrs.PlateCarree(), shading='flat', vmin=np.log10(0.1),
+                    vmax=np.log10(10), cmap=plt.cm.viridis)
+gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
+cbar = plt.colorbar(f1, ticks=[np.log10(0.1), np.log10(0.5), np.log10(1), np.log10(3), np.log10(10)],
+                    fraction=0.04, pad=0.1)
+cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
+cbar.set_label('Chl-$\it{a}$ (mg.m$^{-3}$)', fontsize=14)
+#cbar.set_label('Valid Pixels (%)', fontsize=14)
+map.coastlines(resolution='10m', color='black', linewidth=1)
+map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
+                                        edgecolor='k',
+                                        facecolor=cartopy.feature.COLORS['land']))
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\climatology19972021_10km.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+
+
 plt.figure()
 map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
 map.coastlines(resolution='10m', color='black', linewidth=1)
