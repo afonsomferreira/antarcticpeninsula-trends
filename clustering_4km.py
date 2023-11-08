@@ -25,177 +25,132 @@ def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
+def check_for_bloominit(yearly_timeseries):
+    arr = yearly_timeseries.values.copy()                   # avoid mutating the original list
+    counting = []                      # keep track of True indexes, to count them later
+    for i in range(len(arr)):          # cycle by index
+        is_last = i + 1 >= len(arr)    # True if this is the last index in the array
+        if arr[i] == True:
+            counting.append(i)         # add value to list if True
+        if is_last or arr[i] == False: # when we are at the last entry, or find a False
+            if len(counting) < 2:      # check the length of our True indexes, and if less than 6
+                for j in counting:
+                    arr[j] = False     # make each False
+            counting = []
+    return arr
 #os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
-### Load data 1998-2020
-### Load data 1998-2020
-fh = np.load('chloc4so_19972021_10km.npz', allow_pickle=True)
-lat = fh['lat'][100:]
-lon = fh['lon'][30:250]
-chl = fh['chl'][100:, 30:250, :]
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\cciv6data\\')
+fh = np.load('chloc4so_19972022.npz', allow_pickle=True)
+lat = fh['lat'][144:]
+lon = fh['lon']
+chl = fh['chl_oc4so'][144:,:,:]
 time_date = fh['time_date']
 # Correct values
-chl[chl > 50] = 50
-# SST
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\sst-seaice\\ostia')
-### Load data 1998-2020
-fh = np.load('sst_19972021_10km.npz', allow_pickle=True)
-lat_sst = fh['lat'][100:]
-lon_sst = fh['lon'][30:250]
-sst = fh['sst'][100:, 30:250, :]
-time_date_sst = fh['time_date']
-### Load 1981-1996
-fh = np.load('sst_19811996_10km.npz', allow_pickle=True)
-#lat_ = fh['lat']
-#lon = fh['lon']
-sst_19811996 = fh['sst'][100:, 30:250, :]
-time_date_19811996 = fh['time_date']
-# SEA ICE
-### Load data 1998-2020
-fh = np.load('seaice_19972021_10km.npz', allow_pickle=True)
-lat_seaice = fh['lat'][100:]
-lon_seaice = fh['lon'][30:250]
-seaice = fh['seaice'][100:, 30:250, :]
-seaice = seaice*100
-time_date_seaice = fh['time_date']
-### Load 1981-1996
-fh = np.load('seaice_19811996_10km.npz', allow_pickle=True)
-#lat_ = fh['lat']
-#lon = fh['lon']
-seaice_19811996 = fh['seaice'][100:, 30:250, :]
-seaice_19811996 = seaice_19811996*100
-#time_date_19811996 = fh['time_date']
-#PAR
-### Load data 1998-2020
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\par\\')
-fh = np.load('par_19972022_10km.npz', allow_pickle=True)
-lat_par = fh['lat'][100:]
-lon_par = fh['lon'][30:250]
-par = fh['par'][100:, 30:250, :]
-time_date_par = fh['time_date']
+chl[chl > 100] = 100
+#%% Plot test map
+#plt.figure()
+#map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
+#map.set_extent([-67, -53, -67, -60])
+#f1 = map.pcolormesh(lon, lat, chl_grandmean[:-1, :-1], transform=ccrs.PlateCarree(), shading='flat',
+#                    cmap=plt.cm.turbo, zorder=0)
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels=[0, 0.01], colors='black', zorder=1, transform=ccrs.PlateCarree())
+#map.plot(xx,yy,'k*', markeredgewidth=1, markersize=.5, transform=ccrs.PlateCarree(), alpha=1)
+#map.scatter(xx, yy, 1, transform=ccrs.PlateCarree(), c='k', marker='.', edgecolors='none')
+#gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
+#cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
+#cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
+#cbar.set_label('Chl-$\it{a}$ (mg.m$^{-3}$)', fontsize=14)
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels = [0.9, 1.1], colors='k',
+#            transform=ccrs.PlateCarree())
+#plt.contour(X, Y, Z, levels=[0.5, 0.75], colors=['black','cyan'])
+#cbar.set_label('Valid Pixels (%)', fontsize=14)
+#map.coastlines(resolution='10m', color='black', linewidth=1)
+#map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
+#                                        edgecolor='k',
+#                                        facecolor=cartopy.feature.COLORS['land']))
+#plt.tight_layout()
 #%% Calculate metrics
-# Chl-a Mean (Sep-Apr)
-time_date_years = np.empty_like(time_date)
-time_date_months = np.empty_like(time_date)
-for i in range(0, len(time_date)):
-    time_date_years[i] = time_date[i].year
-    time_date_months[i] = time_date[i].month
-chl_sepapr19982021 = np.nanmean(chl[:,:, (time_date_months >= 9) | (time_date_months <= 4)],2)
-# Bloom Peak
-b_init_matrix = np.empty((len(lat), len(lon)))*np.nan
-b_term_matrix = np.empty((len(lat), len(lon)))*np.nan
-b_peak_matrix = np.empty((len(lat), len(lon)))*np.nan
-chl_max_matrix = np.empty((len(lat), len(lon)))*np.nan
+#time_date_years = np.empty_like(time_date)
+#time_date_months = np.empty_like(time_date)
+#for i in range(0, len(time_date)):
+#    time_date_years[i] = time_date[i].year
+#    time_date_months[i] = time_date[i].month
+# Calculate September to April Chl-a Mean
+#chl_sepapr = np.nanmean(chl[:,:, (time_date_months == 9) | (time_date_months == 10) | (time_date_months == 11) | (time_date_months == 12)
+#                 | (time_date_months == 1) | (time_date_months == 2) | (time_date_months == 3) | (time_date_months == 4)],2)
+
+# Phytoplankton cycle metrics
+#b_init_matrix = np.empty((len(lat), len(lon)))*np.nan
+#b_term_matrix = np.empty((len(lat), len(lon)))*np.nan
+#b_peak_matrix = np.empty((len(lat), len(lon)))*np.nan
+#chl_max_matrix = np.empty((len(lat), len(lon)))*np.nan
 #chl_sum_matrix = np.empty((len(lat), len(lon)))*np.nan
 #b_dur_matrix = np.empty((len(lat), len(lon)))*np.nan
-ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
-for i in range(0, len(lat)):
-    print(i)
-    for j in range(0, len(lon)):
-        pixel_pd = pd.Series(data=chl[i,j,:], index=time_date)
-        pixel_averagecycle_pd = pixel_pd.groupby([pixel_pd.index.month, pixel_pd.index.day]).mean()
-        pixel_averagecycle_values = pixel_averagecycle_pd.values
-        pixel_averagecycle_values = np.delete(pixel_averagecycle_values, 59)
-        pixel_averagecycle_augmay = np.hstack((pixel_averagecycle_values[212:],pixel_averagecycle_values[:151]))
-        pixel_averagecycle_pd = pd.Series(data=pixel_averagecycle_augmay, index=ix)
-        # Average Weekly
-        yeartemp_augmay_pd_8day = pixel_averagecycle_pd.resample('8D').mean()
-        # Stop if full of Nans
-        if np.sum(~np.isnan(yeartemp_augmay_pd_8day.values)) < 20:
-            continue        
-        # Calculate Median 
-        chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
-        # Check which weeks are above 5% median
-        chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
-        # Check periods with consecutive weeks above 5% median
-        def start_valid_island(a, thresh, window_size):
-            m = a>thresh
-            me = np.r_[False,m,False]
-            idx = np.flatnonzero(me[:-1]!=me[1:])
-            lens = idx[1::2]-idx[::2]
-            return idx[::2][(lens >= window_size).argmax()]
-        b_peak = np.argmax(yeartemp_augmay_pd_8day)
-        chl_max = np.nanmax(yeartemp_augmay_pd_8day)
-        b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
-        b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+#ix = pd.date_range(start=datetime.date(1997, 9, 1), end=datetime.date(1998, 4, 30), freq='D')
+#for i in range(0, len(lat)):
+#    print(i)
+#    for j in range(0, len(lon)):
+#        pixel_pd = pd.Series(data=chl[i,j,:], index=time_date)
+#        pixel_averagecycle_pd = pixel_pd.groupby([pixel_pd.index.month, pixel_pd.index.day]).mean()
+#        pixel_averagecycle_pd = pixel_averagecycle_pd.drop([(2,29)])
+#        pixel_averagecycle_values = pixel_averagecycle_pd.values
+#        pixel_averagecycle_sepapr = np.hstack((pixel_averagecycle_values[243:],pixel_averagecycle_values[:120]))
+#        pixel_averagecycle_pd = pd.Series(data=pixel_averagecycle_sepapr, index=ix)
+#        # Average Weekly
+#        yeartemp_sepapr_pd_8day = pixel_averagecycle_pd.resample('8D').mean()
+#        # Stop if full of Nans
+#        if np.sum(~np.isnan(yeartemp_sepapr_pd_8day.values)) <= 20:
+#            continue        
+#        # Calculate Median 
+#        chl_median = np.nanmedian(yeartemp_sepapr_pd_8day.values)
+#        # Check which weeks are above 5% median
+#        chl_weeksabovemedian5 = yeartemp_sepapr_pd_8day > chl_median*1.05
+#        # Calculate metrics
+#        b_init = np.argmax(check_for_bloominit(chl_weeksabovemedian5))
+#        b_term = len(chl_weeksabovemedian5) - np.argmax(check_for_bloominit(chl_weeksabovemedian5[::-1])) - 1
+#        b_peak = np.argmax(yeartemp_sepapr_pd_8day)
+#        chl_max = np.nanmax(yeartemp_sepapr_pd_8day)
 #        b_dur = b_term - b_init + 1
-#        b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
-        # Add to matrices
-        b_init_matrix[i,j] = b_init
-        b_term_matrix[i,j] = b_term
-        b_peak_matrix[i,j] = b_peak
-        chl_max_matrix[i,j] = chl_max
-#        chl_sum_matrix[i,j] = b_area
-#        b_dur_matrix[i,j] =b_dur
-# PAR
-## First PAR instance
-time_date_years = np.empty_like(time_date_par)
-time_date_months = np.empty_like(time_date_par)
-for i in range(0, len(time_date_par)):
-    time_date_years[i] = time_date_par[i].year
-    time_date_months[i] = time_date_par[i].month
-par_first_matrix = np.empty((len(lat), len(lon)))*np.nan
-par_last_matrix = np.empty((len(lat), len(lon)))*np.nan
-ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
-for i in range(0, len(lat)):
-    print(i)
-    for j in range(0, len(lon)):
-        pixel_pd = pd.Series(data=par[i,j,:], index=time_date_par)
-        pixel_pd = pixel_pd.resample('D').mean() 
-        pixel_averagecycle_pd = pixel_pd.groupby([pixel_pd.index.month, pixel_pd.index.day]).mean()
-        pixel_averagecycle_values = pixel_averagecycle_pd.values
-        pixel_averagecycle_values = np.delete(pixel_averagecycle_values, 59)
-        pixel_averagecycle_augmay = np.hstack((pixel_averagecycle_values[212:],pixel_averagecycle_values[:151]))
-        pixel_averagecycle_pd = pd.Series(data=pixel_averagecycle_augmay, index=ix)
-        # Average Weekly
-        yeartemp_augmay_pd_8day = pixel_averagecycle_pd.resample('8D').mean()
-        # Stop if full of Nans
-        if np.sum(~np.isnan(yeartemp_augmay_pd_8day.values)) < 20:
-            continue        
-        # Calculate Median 
-        par_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
-        # Check which weeks are above 5% median
-        par_weeksabovemedian5 = yeartemp_augmay_pd_8day > 0
-        # Check periods with consecutive weeks above 5% median
-        def start_valid_island(a, thresh, window_size):
-            m = a>thresh
-            me = np.r_[False,m,False]
-            idx = np.flatnonzero(me[:-1]!=me[1:])
-            lens = idx[1::2]-idx[::2]
-            return idx[::2][(lens >= window_size).argmax()]
-#        b_peak = yeartemp_augmay_pd_8day.index[np.argmax(yeartemp_augmay_pd_8day)].dayofyear
-#        par_max = np.nanmax(yeartemp_augmay_pd_8day)
-        b_init = start_valid_island(yeartemp_augmay_pd_8day.values, 0, 2)
-        b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], 0, 2)
-#        b_dur = b_term - b_init + 1
-#        b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
-        # Add to matrices
-        par_first_matrix[i,j] = b_init
-        par_last_matrix[i,j] = b_term
+#        # Add to matrices
+#        b_init_matrix[i,j] = b_init
+#        b_term_matrix[i,j] = b_term
 #        b_peak_matrix[i,j] = b_peak
-#        par_max_matrix[i,j] = par_max
-#        chl_sum_matrix[i,j] = b_area
-#        b_dur_matrix[i,j] =b_dur
+#        chl_max_matrix[i,j] = chl_max
+#        b_dur_matrix[i,j] = b_dur
+#
+# Save metrics to avoid repeating all over again
+#np.savez_compressed('cciv6_bmetrics_8day_4km_preclustering', lat = lat, lon = lon, binit = b_init_matrix,
+#                    bterm = b_term_matrix, bpeak = b_peak_matrix, chlmax = chl_max_matrix, bdur = b_dur_matrix,
+#                    chl_sepapr = chl_sepapr)
 #%%
-map_indexes_number = np.arange(1,26401)
-map_indexes = np.array((np.reshape(map_indexes_number,(120,220))),dtype=float)
+#load pre-clustering metrics
+fh = np.load('cciv6_bmetrics_8day_4km_preclustering.npz',allow_pickle = True)
+binit = fh['binit']
+bterm = fh['bterm']
+bpeak = fh['bpeak']
+chlmax = fh['chlmax']
+bdur = fh['bdur']
+chl_sepapr = fh['chl_sepapr']
+map_indexes_number = np.arange(1,126721)
+map_indexes = np.array((np.reshape(map_indexes_number,(264,480))),dtype=float)
 map_indexes_1D = map_indexes.ravel()
 # CHL indices
-b_peak_1D = b_peak_matrix.ravel()
-chl_max_1D = chl_max_matrix.ravel()
-b_init_1D = b_init_matrix.ravel()
-b_term_1D = b_term_matrix.ravel()
-chl_sepapr_1D = chl_sepapr19982021.ravel()
-par_first_1D = par_first_matrix.ravel()
-par_last_1D = par_last_matrix.ravel()
+b_peak_1D = bpeak.ravel()
+chl_max_1D = chlmax.ravel()
+b_init_1D = binit.ravel()
+b_term_1D = bterm.ravel()
+chl_sepapr_1D = chl_sepapr.ravel()
+b_dur_1D = bdur.ravel()
 map_indexes_1D_nonan = map_indexes_1D[~np.isnan(b_peak_1D) & ~np.isnan(chl_max_1D)]
 b_peak_1D_nonan = b_peak_1D[~np.isnan(b_peak_1D) & ~np.isnan(chl_max_1D)]
 chl_max_1D_nonan = chl_max_1D[~np.isnan(chl_max_1D) & ~np.isnan(chl_max_1D)]
 b_init_1D_nonan = b_init_1D[~np.isnan(b_init_1D) & ~np.isnan(chl_max_1D)]
 b_term_1D_nonan = b_term_1D[~np.isnan(b_peak_1D) & ~np.isnan(chl_max_1D)]
 chl_sepapr_1D_nonan = chl_sepapr_1D[~np.isnan(chl_sepapr_1D) & ~np.isnan(chl_max_1D)]
-par_first_1D_nonan = par_first_1D[~np.isnan(par_first_1D) & ~np.isnan(chl_max_1D) & ~np.isnan(par_first_1D)]
-par_last_1D_nonan = par_last_1D[~np.isnan(par_last_1D) & ~np.isnan(chl_max_1D) & ~np.isnan(par_first_1D)]
+b_dur_1D_nonan = b_dur_1D[~np.isnan(b_dur_1D) & ~np.isnan(b_dur_1D)]
+
+#par_first_1D_nonan = par_first_1D[~np.isnan(par_first_1D) & ~np.isnan(chl_max_1D) & ~np.isnan(par_first_1D)]
+#par_last_1D_nonan = par_last_1D[~np.isnan(par_last_1D) & ~np.isnan(chl_max_1D) & ~np.isnan(par_first_1D)]
 
 
 x = [b_peak_1D_nonan,
@@ -203,12 +158,13 @@ x = [b_peak_1D_nonan,
      b_init_1D_nonan,
      b_term_1D_nonan,
      chl_sepapr_1D_nonan,
+     b_dur_1D_nonan
 #     par_first_1D_nonan,
 #     par_last_1D_nonan
      ]
 df = pd.DataFrame(x)
 df = df.T
-df.columns = ['Peak', 'Max', 'Initiation', 'Termination', 'Sep-Apr Mean'],# 'PAR First', 'PAR Last']
+df.columns = ['Peak', 'Max', 'Initiation', 'Termination', 'Sep-Apr Mean', 'Duration']# 'PAR First', 'PAR Last']
 import seaborn as sns
 corr = df.corr()
 mask = np.zeros_like(corr, dtype=np.bool)
@@ -217,7 +173,7 @@ ax = sns.heatmap(corr, mask=mask, cmap=plt.cm.seismic, vmax=1,vmin=-1,center=0,
             square=True, linewidths=.5, cbar_kws={"shrink": .5},annot=True)
 #%%
 # Separating out the features
-features = ['Peak', 'Initiation', 'Termination', 'Sep-Apr Mean']
+features = ['Peak', 'Max', 'Initiation', 'Termination', 'Sep-Apr Mean', 'Duration']
 x = df.loc[:, features]
 #x = x.dropna().values
 from sklearn.preprocessing import normalize
@@ -225,14 +181,14 @@ data_scaled = normalize(x)
 data_scaled = pd.DataFrame(data_scaled, columns=features)
 data_scaled.head()
 import scipy.cluster.hierarchy as shc
-plt.figure(figsize=(10, 7))  
-plt.title("Phenoregions Hierarchical Clustering Dendogram")  
-dend = shc.dendrogram(shc.linkage(data_scaled, method='ward'), truncate_mode = 'lastp',
-                                  color_threshold=10, show_contracted=True)
-plt.axhline(y=10, c='k', linewidth=2)
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\hierarchicalclustering_10km.png'
-plt.savefig(graphs_dir,format = 'png', dpi = 500)
-plt.close()
+#plt.figure(figsize=(10, 7))  
+#plt.title("Phenoregions Hierarchical Clustering Dendogram")  
+#dend = shc.dendrogram(shc.linkage(data_scaled, method='ward'), truncate_mode = 'lastp',
+#                                  color_threshold=10, show_contracted=True)
+#plt.axhline(y=10, c='k', linewidth=2)
+#graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\hierarchicalclustering_10km.png'
+#plt.savefig(graphs_dir,format = 'png', dpi = 500)
+#plt.close()
 
 from sklearn.cluster import AgglomerativeClustering
 cluster = AgglomerativeClustering(n_clusters=4, affinity='manhattan', linkage='average')  

@@ -61,7 +61,7 @@ def download_cci(lat_boundaries, lon_boundaries, time_init_date, time_final_date
     """Downloads chl data from CCI v5 4km using previously defined
     Region of Interest and Time Period by user"""
     # Open netcdf4 file using OPENDAP
-    nc_in = nc4.Dataset('https://www.oceancolour.org/thredds/dodsC/CCI_ALL-v5.0-1km-DAILY')
+    nc_in = nc4.Dataset('https://www.oceancolour.org/thredds/dodsC/CCI_ALL-v6.0-DAILY')
     # Extract latitude and longitude
     lati = nc_in.variables['lat'][:]
     loni = nc_in.variables['lon'][:]
@@ -110,13 +110,20 @@ def download_cci(lat_boundaries, lon_boundaries, time_init_date, time_final_date
     rrs510 = np.swapaxes(np.swapaxes(rrs510, 0, 2), 0, 1)
     # Replaces invalid values with NaNs
     rrs510[rrs510 == 9.96921E36] = np.nan       
-    #Rrs555
-    rrs555 = np.array(nc_in.variables['Rrs_555'][time_start_ind:time_start_end,
+    #Rrs560
+    rrs560 = np.array(nc_in.variables['Rrs_560'][time_start_ind:time_start_end,
                                               lat_lb:lat_ub, lon_lb:lon_ub])
     # Swaps axes to lon, lat, time
-    rrs555 = np.swapaxes(np.swapaxes(rrs555, 0, 2), 0, 1)
+    rrs560 = np.swapaxes(np.swapaxes(rrs560, 0, 2), 0, 1)
     # Replaces invalid values with NaNs
-    rrs555[rrs555 == 9.96921E36] = np.nan        
+    rrs560[rrs560 == 9.96921E36] = np.nan        
+    #Chla
+    chla = np.array(nc_in.variables['chlor_a'][time_start_ind:time_start_end,
+                                              lat_lb:lat_ub, lon_lb:lon_ub])
+    # Swaps axes to lon, lat, time
+    chla = np.swapaxes(np.swapaxes(chla, 0, 2), 0, 1)
+    # Replaces invalid values with NaNs
+    chla[chla == 9.96921E36] = np.nan  
     #Rrs670
     #rrs670 = np.array(nc_in.variables['Rrs_670'][time_start_ind:time_start_end,
     #                                          lat_lb:lat_ub, lon_lb:lon_ub])
@@ -125,35 +132,37 @@ def download_cci(lat_boundaries, lon_boundaries, time_init_date, time_final_date
     # Replaces invalid values with NaNs
     #rrs670[rrs670 == 9.96921E36] = np.nan          
     
-    return rrs443, rrs490, rrs510, rrs555,  lat, lon, time_array, time_array_date
+    return chla, rrs443, rrs490, rrs510, rrs560,  lat, lon, time_array, time_array_date
 ### Define ROI
 #Please enter upper right corner latitude [-90-90°N]:
-lat_max = '-80'
+lat_max = '-54'
 #Please enter lower left corner latitude [-90-90°N]:
-lat_min = '-85'
+lat_min = '-71'
 #Please enter upper right corner longitude [-180-180°E]:
-lon_max = '180'
+lon_max = '-50'
 #Please enter lower left corner longitude [-180-180°E]:
-lon_min = '90'
+lon_min = '-70'
 LATBD, LONBD = define_ROI(lat_max, lat_min, lon_max, lon_min)
 ### Define timespan
 # Please enter initial day [YYYY-MM-DD]:
-time_start = '2020-01-01'
+#time_start = '2022-01-01'
+time_start = '2022-07-01'
 # Please enter final day [YYYY-MM-DD]:
-time_end = '2020-01-31'
+#time_end = '2022-06-30'
+time_end = '2022-12-31'
+
 time_start_datetime, time_end_datetime = define_time(time_start, time_end)
 ### Download data
 #Please enter the desired name for the downloaded file
-filename_out_chl = 'cci_rrs_download_1997'
-rrs443, rrs490, rrs510, rrs555, lat, lon, time_array, time_array_date = download_cci(LATBD,
+filename_out_chl = 'cci_rrs_download_2022_2'
+chla, rrs443, rrs490, rrs510, rrs560, lat, lon, time_array, time_array_date = download_cci(LATBD,
                                                           LONBD,
                                                           time_start_datetime,
                                                           time_end_datetime)
 ### Save data in Downloads Folder by default
-os.chdir(str(Path.home() / "Downloads"))
-np.savez_compressed(filename_out_chl, lat=lat, lon=lon,
-                    rrs443=rrs443, rrs490=rrs490, rrs510=rrs510, rrs555=rrs555,
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\cciv6data\\')
+np.savez_compressed(filename_out_chl, lat=lat, lon=lon, chl=chla,
+                    rrs443=rrs443, rrs490=rrs490, rrs510=rrs510, rrs560=rrs560,
                     time=time_array, time_date=time_array_date)
 
-#os.chdir('C:\\Users\\Afonso\\Downloads')
 #filedata = np.load('OcN_randomforest_ready_v42.npz',allow_pickle = True)

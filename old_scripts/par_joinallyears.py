@@ -21,7 +21,7 @@ def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
-os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\par\\par_80W70W\\')
+os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\par\\20202022')
 ### Load and join data
 files = os.listdir()
 for i in files:
@@ -37,7 +37,7 @@ for i in files:
         #sst = np.swapaxes(np.swapaxes(sst, 0, 2), 0, 1)
         par = np.array(fh['PAR_mean'])
         par[par == -999.0] = np.nan
-        #par = np.float16(par)
+        par = np.float16(par)
         #par = np.swapaxes(np.swapaxes(par, 0, 2), 0, 1)
         time_date = datetime.datetime(year=int(i[4:8]), month=int(i[8:10]), day=int(i[10:12]))
     else:
@@ -48,7 +48,7 @@ for i in files:
         #sst_temp = np.swapaxes(np.swapaxes(sst_temp, 0, 2), 0, 1)
         par_temp = np.array(fh['PAR_mean'])
         par_temp[par_temp == -999.0] = np.nan
-        #par_temp = np.float16(par_temp)
+        par_temp = np.float16(par_temp)
         #par_temp = np.swapaxes(np.swapaxes(par_temp, 0, 2), 0, 1)
         #Converts to datetime
         time_date_temp = datetime.datetime(year=int(i[4:8]), month=int(i[8:10]), day=int(i[10:12]))
@@ -57,6 +57,6 @@ for i in files:
         time_date = np.hstack((time_date, time_date_temp))
         #print(time_date_temp)
 
-np.savez_compressed('par_19972021_80W70W', #sst=sst, #seaice=seaice,
+np.savez_compressed('par_20202022', #sst=sst, #seaice=seaice,
                     time_date=time_date, par=par,
                     lat=lat, lon=lon)

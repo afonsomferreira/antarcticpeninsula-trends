@@ -77,9 +77,9 @@ for i in range(0, len(time_date)):
 # Correct values
 chl[chl > 50] = 50
 # Load clusters
-fh = np.load('antarcticpeninsula_cluster.npz',allow_pickle = True)
+fh = np.load('antarcticpeninsula_newclusters_seaicebelow15.npz',allow_pickle = True)
 clusters = fh['clusters']
-#%% Separar para o cluster 1 (Weddell)
+#%% Separar para o cluster 1 (WEDi)
 weddell_cluster = chl[clusters == 1,:]
 weddell_cluster = np.nanmean(weddell_cluster,0)
 weddell_cluster = np.where(weddell_cluster > np.nanmedian(weddell_cluster)-np.nanstd(weddell_cluster)*3, weddell_cluster, np.nan)
@@ -93,7 +93,7 @@ for i in np.arange(1998, 2022):
     yeartemp_feb = weddell_cluster[(time_date_years == i) & (time_date_months == 2)]
     yeartemp_mar = weddell_cluster[(time_date_years == i) & (time_date_months == 3)]
     yeartemp_apr = weddell_cluster[(time_date_years == i) & (time_date_months == 4)]
-    yeartemp_novfeb = np.nanmean(np.hstack((yeartemp_nov, yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
     yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
                                                      yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
     if i == 1998:
@@ -105,7 +105,7 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.nanmean(yeartemp_feb)
         years_mar_19982021 = np.nanmean(yeartemp_mar)
         years_apr_19982021 = np.nanmean(yeartemp_apr)
-        years_novfeb_19982021 = yeartemp_novfeb
+        years_decfeb_19982021 = yeartemp_decfeb
         years_sepapr_19982021 = yeartemp_sepapr
     else:
         years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
@@ -116,10 +116,10 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
         years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
         years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
-        years_novfeb_19982021 = np.hstack((years_novfeb_19982021, yeartemp_novfeb))
+        years_decfeb_19982021 = np.hstack((years_decfeb_19982021, yeartemp_decfeb))
         years_sepapr_19982021 = np.hstack((years_sepapr_19982021, yeartemp_sepapr))
 # Calculate linear trends for each period
-# September
+# September **
 slope_weddell_sep, _, rvalue_weddell_sep, pvalue_weddell_sep, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sep_19982021)], years_sep_19982021[~np.isnan(years_sep_19982021)])
 # October
 slope_weddell_oct, _, rvalue_weddell_oct, pvalue_weddell_oct, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_oct_19982021)], years_oct_19982021[~np.isnan(years_oct_19982021)])
@@ -137,15 +137,15 @@ slope_weddell_mar, _, rvalue_weddell_mar, pvalue_weddell_mar, _ = stats.linregre
 #slope_weddell_apr, _, rvalue_weddell_apr, pvalue_weddell_apr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_apr_19982021)], years_apr_19982021[~np.isnan(years_apr_19982021)])
 slope_weddell_apr = np.nan
 # November-February
-slope_weddell_novfeb, _, rvalue_weddell_novfeb, pvalue_weddell_novfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_novfeb_19982021)], years_novfeb_19982021[~np.isnan(years_novfeb_19982021)])
+slope_weddell_decfeb, _, rvalue_weddell_decfeb, pvalue_weddell_decfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_decfeb_19982021)], years_decfeb_19982021[~np.isnan(years_decfeb_19982021)])
 # September-April
 slope_weddell_sepapr, _, rvalue_weddell_sepapr, pvalue_weddell_sepapr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sepapr_19982021)], years_sepapr_19982021[~np.isnan(years_sepapr_19982021)])
 # Prepare data for heatmap
 weddell_slopes = np.hstack((slope_weddell_sep, slope_weddell_oct, slope_weddell_nov, slope_weddell_dec,
                             slope_weddell_jan, slope_weddell_feb, slope_weddell_mar, slope_weddell_apr,
-                            slope_weddell_novfeb, slope_weddell_sepapr))
+                            slope_weddell_decfeb, slope_weddell_sepapr))
 weddell_slopes = np.around(weddell_slopes, 3)
-#%% Separar para o cluster 2 (Gerlache)
+#%% Separar para o cluster 2 (GES)
 gerlache_cluster = chl[clusters == 2,:]
 gerlache_cluster = np.nanmean(gerlache_cluster,0)
 gerlache_cluster = np.where(gerlache_cluster > np.nanmedian(gerlache_cluster)-np.nanstd(gerlache_cluster)*3, gerlache_cluster, np.nan)
@@ -159,7 +159,7 @@ for i in np.arange(1998, 2022):
     yeartemp_feb = gerlache_cluster[(time_date_years == i) & (time_date_months == 2)]
     yeartemp_mar = gerlache_cluster[(time_date_years == i) & (time_date_months == 3)]
     yeartemp_apr = gerlache_cluster[(time_date_years == i) & (time_date_months == 4)]
-    yeartemp_novfeb = np.nanmean(np.hstack((yeartemp_nov, yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
     yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
                                                      yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
     if i == 1998:
@@ -171,7 +171,7 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.nanmean(yeartemp_feb)
         years_mar_19982021 = np.nanmean(yeartemp_mar)
         years_apr_19982021 = np.nanmean(yeartemp_apr)
-        years_novfeb_19982021 = yeartemp_novfeb
+        years_decfeb_19982021 = yeartemp_decfeb
         years_sepapr_19982021 = yeartemp_sepapr
     else:
         years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
@@ -182,10 +182,10 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
         years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
         years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
-        years_novfeb_19982021 = np.hstack((years_novfeb_19982021, yeartemp_novfeb))
+        years_decfeb_19982021 = np.hstack((years_decfeb_19982021, yeartemp_decfeb))
         years_sepapr_19982021 = np.hstack((years_sepapr_19982021, yeartemp_sepapr))
 # Calculate linear trends for each period
-# September
+# September **
 slope_gerlache_sep, _, rvalue_gerlache_sep, pvalue_gerlache_sep, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sep_19982021)], years_sep_19982021[~np.isnan(years_sep_19982021)])
 # October
 slope_gerlache_oct, _, rvalue_gerlache_oct, pvalue_gerlache_oct, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_oct_19982021)], years_oct_19982021[~np.isnan(years_oct_19982021)])
@@ -197,21 +197,21 @@ slope_gerlache_dec, _, rvalue_gerlache_dec, pvalue_gerlache_dec, _ = stats.linre
 slope_gerlache_jan, _, rvalue_gerlache_jan, pvalue_gerlache_jan, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_jan_19982021)], years_jan_19982021[~np.isnan(years_jan_19982021)])
 # February
 slope_gerlache_feb, _, rvalue_gerlache_feb, pvalue_gerlache_feb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_feb_19982021)], years_feb_19982021[~np.isnan(years_feb_19982021)])
-# March
+# March **
 slope_gerlache_mar, _, rvalue_gerlache_mar, pvalue_gerlache_mar, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_mar_19982021)], years_mar_19982021[~np.isnan(years_mar_19982021)])
 # April # More than 5 years with nans
 #slope_gerlache_apr, _, rvalue_gerlache_apr, pvalue_gerlache_apr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_apr_19982021)], years_apr_19982021[~np.isnan(years_apr_19982021)])
 slope_gerlache_apr = np.nan
 # November-February
-slope_gerlache_novfeb, _, rvalue_gerlache_novfeb, pvalue_gerlache_novfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_novfeb_19982021)], years_novfeb_19982021[~np.isnan(years_novfeb_19982021)])
+slope_gerlache_decfeb, _, rvalue_gerlache_decfeb, pvalue_gerlache_decfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_decfeb_19982021)], years_decfeb_19982021[~np.isnan(years_decfeb_19982021)])
 # September-April
 slope_gerlache_sepapr, _, rvalue_gerlache_sepapr, pvalue_gerlache_sepapr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sepapr_19982021)], years_sepapr_19982021[~np.isnan(years_sepapr_19982021)])
 # Prepare data for heatmap
 gerlache_slopes = np.hstack((slope_gerlache_sep, slope_gerlache_oct, slope_gerlache_nov, slope_gerlache_dec,
                             slope_gerlache_jan, slope_gerlache_feb, slope_gerlache_mar, slope_gerlache_apr,
-                            slope_gerlache_novfeb, slope_gerlache_sepapr))
+                            slope_gerlache_decfeb, slope_gerlache_sepapr))
 gerlache_slopes = np.around(gerlache_slopes, 3)
-#%% Separar para o cluster 4 (Bransfield)
+#%% Separar para o cluster 4 (BRS)
 bransfield_cluster = chl[clusters == 4,:]
 bransfield_cluster = np.nanmean(bransfield_cluster,0)
 bransfield_cluster = np.where(bransfield_cluster > np.nanmedian(bransfield_cluster)-np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
@@ -225,7 +225,7 @@ for i in np.arange(1998, 2022):
     yeartemp_feb = bransfield_cluster[(time_date_years == i) & (time_date_months == 2)]
     yeartemp_mar = bransfield_cluster[(time_date_years == i) & (time_date_months == 3)]
     yeartemp_apr = bransfield_cluster[(time_date_years == i) & (time_date_months == 4)]
-    yeartemp_novfeb = np.nanmean(np.hstack((yeartemp_nov, yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
     yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
                                                      yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
     if i == 1998:
@@ -237,7 +237,7 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.nanmean(yeartemp_feb)
         years_mar_19982021 = np.nanmean(yeartemp_mar)
         years_apr_19982021 = np.nanmean(yeartemp_apr)
-        years_novfeb_19982021 = yeartemp_novfeb
+        years_decfeb_19982021 = yeartemp_decfeb
         years_sepapr_19982021 = yeartemp_sepapr
     else:
         years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
@@ -248,36 +248,36 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
         years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
         years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
-        years_novfeb_19982021 = np.hstack((years_novfeb_19982021, yeartemp_novfeb))
+        years_decfeb_19982021 = np.hstack((years_decfeb_19982021, yeartemp_decfeb))
         years_sepapr_19982021 = np.hstack((years_sepapr_19982021, yeartemp_sepapr))
 # Calculate linear trends for each period
-# September
+# September *
 slope_bransfield_sep, _, rvalue_bransfield_sep, pvalue_bransfield_sep, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sep_19982021)], years_sep_19982021[~np.isnan(years_sep_19982021)])
 # October
 slope_bransfield_oct, _, rvalue_bransfield_oct, pvalue_bransfield_oct, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_oct_19982021)], years_oct_19982021[~np.isnan(years_oct_19982021)])
 # November
 slope_bransfield_nov, _, rvalue_bransfield_nov, pvalue_bransfield_nov, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_nov_19982021)], years_nov_19982021[~np.isnan(years_nov_19982021)])
-# December
+# December *
 slope_bransfield_dec, _, rvalue_bransfield_dec, pvalue_bransfield_dec, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_dec_19982021)], years_dec_19982021[~np.isnan(years_dec_19982021)])
 # January
 slope_bransfield_jan, _, rvalue_bransfield_jan, pvalue_bransfield_jan, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_jan_19982021)], years_jan_19982021[~np.isnan(years_jan_19982021)])
-# February
+# February *
 slope_bransfield_feb, _, rvalue_bransfield_feb, pvalue_bransfield_feb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_feb_19982021)], years_feb_19982021[~np.isnan(years_feb_19982021)])
-# March
+# March ***
 slope_bransfield_mar, _, rvalue_bransfield_mar, pvalue_bransfield_mar, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_mar_19982021)], years_mar_19982021[~np.isnan(years_mar_19982021)])
-# April # More than 5 years with nans
+# April ***
 slope_bransfield_apr, _, rvalue_bransfield_apr, pvalue_bransfield_apr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_apr_19982021)], years_apr_19982021[~np.isnan(years_apr_19982021)])
 #slope_bransfield_apr = np.nan
-# November-February
-slope_bransfield_novfeb, _, rvalue_bransfield_novfeb, pvalue_bransfield_novfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_novfeb_19982021)], years_novfeb_19982021[~np.isnan(years_novfeb_19982021)])
-# September-April
+# November-February **
+slope_bransfield_decfeb, _, rvalue_bransfield_decfeb, pvalue_bransfield_decfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_decfeb_19982021)], years_decfeb_19982021[~np.isnan(years_decfeb_19982021)])
+# September-April ****
 slope_bransfield_sepapr, _, rvalue_bransfield_sepapr, pvalue_bransfield_sepapr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sepapr_19982021)], years_sepapr_19982021[~np.isnan(years_sepapr_19982021)])
 # Prepare data for heatmap
 bransfield_slopes = np.hstack((slope_bransfield_sep, slope_bransfield_oct, slope_bransfield_nov, slope_bransfield_dec,
                             slope_bransfield_jan, slope_bransfield_feb, slope_bransfield_mar, slope_bransfield_apr,
-                            slope_bransfield_novfeb, slope_bransfield_sepapr))
+                            slope_bransfield_decfeb, slope_bransfield_sepapr))
 bransfield_slopes = np.around(bransfield_slopes, 3)
-#%% Separar para o cluster 3 (Oceanic)
+#%% Separar para o cluster 3 (DRA)
 oceanic_cluster = chl[clusters == 3,:]
 oceanic_cluster = np.nanmean(oceanic_cluster,0)
 oceanic_cluster = np.where(oceanic_cluster > np.nanmedian(oceanic_cluster)-np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
@@ -291,7 +291,7 @@ for i in np.arange(1998, 2022):
     yeartemp_feb = oceanic_cluster[(time_date_years == i) & (time_date_months == 2)]
     yeartemp_mar = oceanic_cluster[(time_date_years == i) & (time_date_months == 3)]
     yeartemp_apr = oceanic_cluster[(time_date_years == i) & (time_date_months == 4)]
-    yeartemp_novfeb = np.nanmean(np.hstack((yeartemp_nov, yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
     yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
                                                      yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
     if i == 1998:
@@ -303,7 +303,7 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.nanmean(yeartemp_feb)
         years_mar_19982021 = np.nanmean(yeartemp_mar)
         years_apr_19982021 = np.nanmean(yeartemp_apr)
-        years_novfeb_19982021 = yeartemp_novfeb
+        years_decfeb_19982021 = yeartemp_decfeb
         years_sepapr_19982021 = yeartemp_sepapr
     else:
         years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
@@ -314,7 +314,7 @@ for i in np.arange(1998, 2022):
         years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
         years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
         years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
-        years_novfeb_19982021 = np.hstack((years_novfeb_19982021, yeartemp_novfeb))
+        years_decfeb_19982021 = np.hstack((years_decfeb_19982021, yeartemp_decfeb))
         years_sepapr_19982021 = np.hstack((years_sepapr_19982021, yeartemp_sepapr))
 # Calculate linear trends for each period
 # September
@@ -335,48 +335,193 @@ slope_oceanic_mar, _, rvalue_oceanic_mar, pvalue_oceanic_mar, _ = stats.linregre
 slope_oceanic_apr, _, rvalue_oceanic_apr, pvalue_oceanic_apr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_apr_19982021)], years_apr_19982021[~np.isnan(years_apr_19982021)])
 #slope_oceanic_apr = np.nan
 # November-February
-slope_oceanic_novfeb, _, rvalue_oceanic_novfeb, pvalue_oceanic_novfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_novfeb_19982021)], years_novfeb_19982021[~np.isnan(years_novfeb_19982021)])
+slope_oceanic_decfeb, _, rvalue_oceanic_decfeb, pvalue_oceanic_decfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_decfeb_19982021)], years_decfeb_19982021[~np.isnan(years_decfeb_19982021)])
 # September-April
 slope_oceanic_sepapr, _, rvalue_oceanic_sepapr, pvalue_oceanic_sepapr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sepapr_19982021)], years_sepapr_19982021[~np.isnan(years_sepapr_19982021)])
 # Prepare data for heatmap
 oceanic_slopes = np.hstack((slope_oceanic_sep, slope_oceanic_oct, slope_oceanic_nov, slope_oceanic_dec,
                             slope_oceanic_jan, slope_oceanic_feb, slope_oceanic_mar, slope_oceanic_apr,
-                            slope_oceanic_novfeb, slope_oceanic_sepapr))
+                            slope_oceanic_decfeb, slope_oceanic_sepapr))
 oceanic_slopes = np.around(oceanic_slopes, 3)
+#%% Separar para o cluster 3 (WEDo)
+wedo_cluster = chl[clusters == 5,:]
+wedo_cluster = np.nanmean(wedo_cluster,0)
+wedo_cluster = np.where(wedo_cluster > np.nanmedian(wedo_cluster)-np.nanstd(wedo_cluster)*3, wedo_cluster, np.nan)
+wedo_cluster = np.where(wedo_cluster < np.nanmedian(wedo_cluster)+np.nanstd(wedo_cluster)*3, wedo_cluster, np.nan)
+for i in np.arange(1998, 2022):
+    yeartemp_sep = wedo_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = wedo_cluster[(time_date_years == i-1) & (time_date_months == 10)]
+    yeartemp_nov = wedo_cluster[(time_date_years == i-1) & (time_date_months == 11)]
+    yeartemp_dec = wedo_cluster[(time_date_years == i-1) & (time_date_months == 12)]
+    yeartemp_jan = wedo_cluster[(time_date_years == i) & (time_date_months == 1)]
+    yeartemp_feb = wedo_cluster[(time_date_years == i) & (time_date_months == 2)]
+    yeartemp_mar = wedo_cluster[(time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = wedo_cluster[(time_date_years == i) & (time_date_months == 4)]
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
+                                                     yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
+    if i == 1998:
+        years_sep_19982021 = np.nanmean(yeartemp_sep)
+        years_oct_19982021 = np.nanmean(yeartemp_oct)
+        years_nov_19982021 = np.nanmean(yeartemp_nov)
+        years_dec_19982021 = np.nanmean(yeartemp_dec)
+        years_jan_19982021 = np.nanmean(yeartemp_jan)
+        years_feb_19982021 = np.nanmean(yeartemp_feb)
+        years_mar_19982021 = np.nanmean(yeartemp_mar)
+        years_apr_19982021 = np.nanmean(yeartemp_apr)
+        years_decfeb_19982021 = yeartemp_decfeb
+        years_sepapr_19982021 = yeartemp_sepapr
+    else:
+        years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
+        years_oct_19982021 = np.hstack((years_oct_19982021, np.nanmean(yeartemp_oct)))
+        years_nov_19982021 = np.hstack((years_nov_19982021, np.nanmean(yeartemp_nov)))
+        years_dec_19982021 = np.hstack((years_dec_19982021, np.nanmean(yeartemp_dec)))
+        years_jan_19982021 = np.hstack((years_jan_19982021, np.nanmean(yeartemp_jan)))
+        years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
+        years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
+        years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
+        years_decfeb_19982021 = np.hstack((years_decfeb_19982021, yeartemp_decfeb))
+        years_sepapr_19982021 = np.hstack((years_sepapr_19982021, yeartemp_sepapr))
+# Calculate linear trends for each period
+# September *
+slope_wedo_sep, _, rvalue_wedo_sep, pvalue_wedo_sep, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sep_19982021)], years_sep_19982021[~np.isnan(years_sep_19982021)])
+# October
+slope_wedo_oct, _, rvalue_wedo_oct, pvalue_wedo_oct, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_oct_19982021)], years_oct_19982021[~np.isnan(years_oct_19982021)])
+# November
+slope_wedo_nov, _, rvalue_wedo_nov, pvalue_wedo_nov, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_nov_19982021)], years_nov_19982021[~np.isnan(years_nov_19982021)])
+# December
+slope_wedo_dec, _, rvalue_wedo_dec, pvalue_wedo_dec, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_dec_19982021)], years_dec_19982021[~np.isnan(years_dec_19982021)])
+# January
+slope_wedo_jan, _, rvalue_wedo_jan, pvalue_wedo_jan, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_jan_19982021)], years_jan_19982021[~np.isnan(years_jan_19982021)])
+# February
+slope_wedo_feb, _, rvalue_wedo_feb, pvalue_wedo_feb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_feb_19982021)], years_feb_19982021[~np.isnan(years_feb_19982021)])
+# March
+slope_wedo_mar, _, rvalue_wedo_mar, pvalue_wedo_mar, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_mar_19982021)], years_mar_19982021[~np.isnan(years_mar_19982021)])
+# April *
+slope_wedo_apr, _, rvalue_wedo_apr, pvalue_wedo_apr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_apr_19982021)], years_apr_19982021[~np.isnan(years_apr_19982021)])
+#slope_wedo_apr = np.nan
+# November-February
+slope_wedo_decfeb, _, rvalue_wedo_decfeb, pvalue_wedo_decfeb, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_decfeb_19982021)], years_decfeb_19982021[~np.isnan(years_decfeb_19982021)])
+# September-April
+slope_wedo_sepapr, _, rvalue_wedo_sepapr, pvalue_wedo_sepapr, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(years_sepapr_19982021)], years_sepapr_19982021[~np.isnan(years_sepapr_19982021)])
+# Prepare data for heatmap
+wedo_slopes = np.hstack((slope_wedo_sep, slope_wedo_oct, slope_wedo_nov, slope_wedo_dec,
+                            slope_wedo_jan, slope_wedo_feb, slope_wedo_mar, slope_wedo_apr,
+                            slope_wedo_decfeb, slope_wedo_sepapr))
+wedo_slopes = np.around(wedo_slopes, 3)
+
+
 
 #%%
-annot_ori = [[f"{val:.3f}"  for val in row] for row in [weddell_slopes, gerlache_slopes, bransfield_slopes, oceanic_slopes]]
-annot_ori[0][0] = annot_ori[0][0] + '\n★'
-annot_ori[1][0] = annot_ori[1][0] + '\n★' + '★'
+annot_ori = [[f"{val:.3f}"  for val in row] for row in [oceanic_slopes, bransfield_slopes, weddell_slopes, gerlache_slopes, wedo_slopes]]
+#BRS
+annot_ori[1][0] = annot_ori[1][0] + '\n★'
 annot_ori[1][3] = annot_ori[1][3] + '\n★'
-annot_ori[1][6] = annot_ori[1][6] + '\n★' + '★'
-annot_ori[1][9] = annot_ori[1][9] + '\n★'
+annot_ori[1][5] = annot_ori[1][5] + '\n★'
+annot_ori[1][6] = annot_ori[1][6] + '\n★' + '★' + '★'
+annot_ori[1][7] = annot_ori[1][7] + '\n★' + '★' + '★'
+annot_ori[1][8] = annot_ori[1][8] + '\n★' + '★'
+annot_ori[1][9] = annot_ori[1][9] + '\n★' + '★' + '★'
+#WEDo
 annot_ori[2][0] = annot_ori[2][0] + '\n★'
-annot_ori[2][3] = annot_ori[2][3] + '\n★'
-annot_ori[2][5] = annot_ori[2][5] + '\n★'
-annot_ori[2][6] = annot_ori[2][6] + '\n★' + '★' + '★'
-annot_ori[2][7] = annot_ori[2][7] + '\n★' + '★' + '★'
-annot_ori[2][8] = annot_ori[2][8] + '\n★'
-annot_ori[2][9] = annot_ori[2][9] + '\n★' + '★' + '★'
+annot_ori[2][7] = annot_ori[2][7] + '\n★'
+#GES
+annot_ori[3][0] = annot_ori[3][0] + '\n★' + '★'
 annot_ori[3][6] = annot_ori[3][6] + '\n★' + '★'
+#WEDi
+annot_ori[4][0] = annot_ori[4][0] + '\n★'
+annot_ori[4][7] = annot_ori[4][7] + '\n★'
 #%%
-fig, ax = plt.subplots(figsize=(25, 3))
-sns.heatmap([weddell_slopes, gerlache_slopes, bransfield_slopes, oceanic_slopes], square=True, annot=annot_ori, fmt='',
-            vmin=-0.05, vmax=.05, cmap=plt.cm.seismic, cbar_kws={"fraction":0.019, "pad":0.05})
-plt.yticks(ticks=np.arange(0.5, 4), labels=['WED', 'GER', 'BRA', 'OCE'], fontsize=12, rotation = 360)
-plt.xticks(ticks=np.arange(0.5,10), labels=['SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'NOVFEB', 'SEPAPR'], fontsize=12)
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.heatmap([oceanic_slopes, bransfield_slopes, weddell_slopes, gerlache_slopes, wedo_slopes ], square=True, annot=annot_ori, fmt='',
+            vmin=-0.05, vmax=.05, cmap=plt.cm.seismic, cbar_kws={"fraction":0.019, "pad":0.05}, ax=ax)
+plt.yticks(ticks=np.arange(0.5, 5), labels=['DRA', 'BRS', 'WED$_\mathrm{I}$', 'GES', 'WED$_\mathrm{O}$'], fontsize=12, rotation = 360)
+plt.xticks(ticks=np.arange(0.5,10), labels=['SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'DEC-FEB', 'SEP-APR'], fontsize=12)
 plt.xlabel('Period', fontsize=14)
 plt.ylabel('Region', fontsize=14)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\trendspermonth_heatmap_612.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\biomasstrends_fig3_vb.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
+
+#%% Plot only significant ones
+# BRS MAR, APR, DEC-FEB, SEP-APR
+bransfield_cluster = chl[clusters == 4,:]
+bransfield_cluster = np.nanmean(bransfield_cluster,0)
+bransfield_cluster = np.where(bransfield_cluster > np.nanmedian(bransfield_cluster)-np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
+bransfield_cluster = np.where(bransfield_cluster < np.nanmedian(bransfield_cluster)+np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
+for i in np.arange(1998, 2022):
+    yeartemp_sep = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 10)]
+    yeartemp_nov = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 11)]
+    yeartemp_dec = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 12)]
+    yeartemp_jan = bransfield_cluster[(time_date_years == i) & (time_date_months == 1)]
+    yeartemp_feb = bransfield_cluster[(time_date_years == i) & (time_date_months == 2)]
+    yeartemp_mar = bransfield_cluster[(time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = bransfield_cluster[(time_date_years == i) & (time_date_months == 4)]
+    yeartemp_decfeb = np.nanmean(np.hstack((yeartemp_dec, yeartemp_jan, yeartemp_feb)))
+    yeartemp_sepapr = np.nanmean(np.hstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
+                                                     yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)))
+    if i == 1998:
+        BRS_mar_19982021 = np.nanmean(yeartemp_mar)
+        BRS_apr_19982021 = np.nanmean(yeartemp_apr)
+        BRS_decfeb_19982021 = yeartemp_decfeb
+        BRS_sepapr_19982021 = yeartemp_sepapr
+    else:
+        BRS_mar_19982021 = np.hstack((BRS_mar_19982021, np.nanmean(yeartemp_mar)))
+        BRS_apr_19982021 = np.hstack((BRS_apr_19982021, np.nanmean(yeartemp_apr)))
+        BRS_decfeb_19982021 = np.hstack((BRS_decfeb_19982021, yeartemp_decfeb))
+        BRS_sepapr_19982021 = np.hstack((BRS_sepapr_19982021, yeartemp_sepapr))
+# GES SEP, MAR
+gerlache_cluster = chl[clusters == 2,:]
+gerlache_cluster = np.nanmean(gerlache_cluster,0)
+gerlache_cluster = np.where(gerlache_cluster > np.nanmedian(gerlache_cluster)-np.nanstd(gerlache_cluster)*3, gerlache_cluster, np.nan)
+gerlache_cluster = np.where(gerlache_cluster < np.nanmedian(gerlache_cluster)+np.nanstd(gerlache_cluster)*3, gerlache_cluster, np.nan)
+for i in np.arange(1998, 2022):
+    yeartemp_sep = gerlache_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_mar = gerlache_cluster[(time_date_years == i) & (time_date_months == 3)]
+    if i == 1998:
+        GES_sep_19982021 = np.nanmean(yeartemp_sep)
+        GES_mar_19982021 = np.nanmean(yeartemp_mar)
+    else:
+        GES_sep_19982021 = np.hstack((GES_sep_19982021, np.nanmean(yeartemp_sep)))
+        GES_mar_19982021 = np.hstack((GES_mar_19982021, np.nanmean(yeartemp_mar)))
+
+#%% WEDi Cluster Figure 1
+slope_BRS_mar_19982021, intercept_BRS_mar_19982021, _, _, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(BRS_mar_19982021)], BRS_mar_19982021[~np.isnan(BRS_mar_19982021)])
+slope_BRS_apr_19982021, intercept_BRS_apr_19982021, _, _, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(BRS_apr_19982021)], BRS_apr_19982021[~np.isnan(BRS_apr_19982021)])
+slope_GES_mar_19982021, intercept_GES_mar_19982021, _, _, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(GES_mar_19982021)], GES_mar_19982021[~np.isnan(GES_mar_19982021)])
+slope_GES_sep_19982021, intercept_GES_sep_19982021, _, _, _ = stats.linregress(np.arange(1998, 2022)[~np.isnan(GES_sep_19982021)], GES_sep_19982021[~np.isnan(GES_sep_19982021)])
+
+plt.figure(figsize=(10, 2))
+#plt.plot(np.arange(1,13),weddell_cluster_mean19972021, color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021')
+plt.scatter(np.arange(1998, 2022), BRS_mar_19982021, c = [106/256, 153/256, 78/256, 1], linewidth = 1, label='DRS-MAR', zorder=2, marker='o', s=50, alpha=0.5)
+plt.scatter(np.arange(1998, 2022), BRS_apr_19982021, c = [106/256, 153/256, 78/256, 1], linewidth = 1, label='DRS-APR', zorder=2, marker='o', s=50, alpha=0.5)
+#plt.scatter(np.arange(1998, 2022), BRS_decfeb_19982021, c = [106/256, 153/256, 78/256, 1], linewidth = 1, label='DRS-DECFEB', zorder=2, marker='^', s=25)
+#plt.scatter(np.arange(1998, 2022), BRS_sepapr_19982021, c = [106/256, 153/256, 78/256, 1], linewidth = 1, label='DRS-SEPAPR', zorder=2, marker='*', s=25)
+plt.scatter(np.arange(1998, 2022), GES_sep_19982021, c = [41/256, 51/256, 92/256, 1], linewidth = 1, label='GES-SEP', zorder=2, marker='o', s=50, alpha=0.5)
+plt.scatter(np.arange(1998, 2022), GES_mar_19982021, c = [41/256, 51/256, 92/256, 1], linewidth = 1, label='GES-MAR', zorder=2, marker='o', s=50, alpha=0.5)
+plt.plot(np.arange(1998, 2022),np.arange(1998, 2022) * slope_BRS_mar_19982021 + intercept_BRS_mar_19982021, color = [106/256, 153/256, 78/256, 1], linewidth = 4, linestyle='-', alpha=1, zorder=1)
+plt.plot(np.arange(1998, 2022),np.arange(1998, 2022) * slope_BRS_apr_19982021 + intercept_BRS_apr_19982021, color = [106/256, 153/256, 78/256, 1], linewidth = 4, linestyle='-', alpha=1, zorder=1)
+plt.plot(np.arange(1998, 2022),np.arange(1998, 2022) * slope_GES_mar_19982021 + intercept_GES_mar_19982021, color = [41/256, 51/256, 92/256, 1], linewidth = 4, linestyle='-', alpha=1, zorder=1)
+plt.plot(np.arange(1998, 2022),np.arange(1998, 2022) * slope_GES_sep_19982021 + intercept_GES_sep_19982021, color = [41/256, 51/256, 92/256, 1], linewidth = 4, linestyle='-', alpha=1, zorder=1)
+#plt.xticks(ticks= np.arange(1998, 2022), labels=['98', '99', '00', '01', '02', '03', '04', '05', '06', '07',
+#                                                 '08', '09', '10', '11', '12', '13', '14', '15', '16', '17',
+#                                                 '18', '19', '20', '21'], fontsize=10)
+plt.yticks(fontsize=14)
+plt.xticks(np.arange(1998,2023,4),fontsize=14)
+plt.ylim(0.2,1.6)
+#plt.ylim(0.4,3.5)
+plt.yticks(ticks=[1,2,3], labels=['1.0', '2.0', '3.0'])
+plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
+plt.legend(fontsize=12, loc=0)
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\ges_mar_trendline.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+
+
 #%%
-
-
-
-
-
 
 ### Calculate summer (November-February means for 1998-2005)
 for i in np.arange(1998, 2006):

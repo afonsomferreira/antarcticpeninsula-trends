@@ -24,7 +24,7 @@ def serial_date_to_string(srl_no):
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
 #os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\oc4so_chl\\')
 ### Load data 1998-2020
 fh = np.load('chloc4so_19972021.npz', allow_pickle=True)
 lat = fh['lat']
@@ -37,14 +37,19 @@ for i in range(0, len(time_date)):
     time_date_years[i] = time_date[i].year
     time_date_months[i] = time_date[i].month
 # Correct values
-chl[chl > 50] = np.nan
+chl[chl > 50] = 50
 ### Calculate monthly means
 for i in np.arange(1998, 2022):
+    yeartemp_sep = chl[:,:, (time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = chl[:,:, (time_date_years == i-1) & (time_date_months == 10)]
     yeartemp_nov = chl[:,:, (time_date_years == i-1) & (time_date_months == 11)]
     yeartemp_dec = chl[:,:, (time_date_years == i-1) & (time_date_months == 12)]
     yeartemp_jan = chl[:,:, (time_date_years == i) & (time_date_months == 1)]
     yeartemp_feb = chl[:,:, (time_date_years == i) & (time_date_months == 2)]
-    yeartemp_summermean = np.nanmean(np.dstack((yeartemp_nov, yeartemp_dec, yeartemp_jan, yeartemp_feb)),2)
+    yeartemp_mar = chl[:,:, (time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = chl[:,:, (time_date_years == i) & (time_date_months == 4)]
+    yeartemp_summermean = np.nanmean(np.dstack((yeartemp_sep, yeartemp_oct, yeartemp_nov, yeartemp_dec,
+                                                yeartemp_jan, yeartemp_feb, yeartemp_mar, yeartemp_apr)),2)
     if i == 1998:
         years_summermeans = yeartemp_summermean
     else:
@@ -54,6 +59,7 @@ yearchar = np.arange(1998, 2022)
 chl_summertrend19992020 = np.empty((np.size(lat), np.size(lon)))*np.nan
 chl_summertrend19992020_significant = np.empty((np.size(lat), np.size(lon)))*np.nan
 for i in range(0, len(lat)):
+    print(i)
     for j in range(0, len(lon)):
         yearchar = np.arange(1998, 2022)
         chl_summerpixel = years_summermeans[i,j,:]
@@ -75,15 +81,22 @@ for i in range(0, len(lat)):
 xx, yy = np.meshgrid(lon, lat)
 xx = xx[~np.isnan(chl_summertrend19992020_significant)]
 yy = yy[~np.isnan(chl_summertrend19992020_significant)]
-fig, ax = plt.subplots(figsize=(6, 6))
+plt.figure()
 map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
 map.set_extent([-67, -53, -67, -60])
 f1 = map.pcolormesh(lon, lat, chl_summertrend19992020[:-1, :-1], transform=ccrs.PlateCarree(), shading='flat', vmin=-.1, vmax=.1,
-                    cmap=cmocean.cm.balance)
-map.scatter(xx, yy, 1, transform=ccrs.PlateCarree(), c='k', marker='.', edgecolors='none')
+                    cmap=cmocean.cm.balance, zorder=0)
+map.contourf(
+    lon, lat, chl_summertrend19992020_significant,
+    transform=ccrs.PlateCarree(),
+    colors='none',
+    hatches=[3*'.',3*'.'],
+)
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels=[0, 0.01], colors='black', zorder=1, transform=ccrs.PlateCarree())
+#map.plot(xx,yy,'k*', markeredgewidth=1, markersize=.5, transform=ccrs.PlateCarree(), alpha=1)
+#map.scatter(xx, yy, 1, transform=ccrs.PlateCarree(), c='k', marker='.', edgecolors='none')
 gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
-cbar = plt.colorbar(f1,
-                    fraction=0.04, pad=0.1)
+cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
 #cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
 cbar.set_label('Chl-$\it{a}$ (mg.m$^{-3}$)', fontsize=14)
 #map.contour(lon, lat, chl_summertrend19992020_significant, levels = [0.9, 1.1], colors='k',
@@ -95,7 +108,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         edgecolor='k',
                                         facecolor=cartopy.feature.COLORS['land']))
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\trends\\summertrend_4km_final.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\trend_SEPAPR.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 

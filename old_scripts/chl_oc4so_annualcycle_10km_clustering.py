@@ -47,6 +47,7 @@ chl_mean = np.empty((len(lat), len(lon)))*np.nan
 month_chl_startafterwinter = np.empty((len(lat), len(lon)))*np.nan
 month_chl_stopafterspring = np.empty((len(lat), len(lon)))*np.nan
 total_chla_novfeb = np.empty((len(lat), len(lon)))*np.nan
+total_chla_decfeb = np.empty((len(lat), len(lon)))*np.nan
 chl_amp = np.empty((len(lat), len(lon)))*np.nan
 for i in range(0, len(lat)):
     for j in range(0, len(lon)):
@@ -75,7 +76,8 @@ for i in range(0, len(lat)):
         month_chl_stopafterspring[i,j] = monthlastchl
         total_chla_novfeb[i,j] = integrate.simps(np.hstack((chl_averagecycle[i,j,-2:],
                                                            chl_averagecycle[i,j,:2])))
-
+        total_chla_decfeb[i,j] = integrate.simps(np.hstack((chl_averagecycle[i,j,-1],
+                                                           chl_averagecycle[i,j,:2])))
 #%% Plot maps for each
 # Chl-a Peak
 cmap_data = np.loadtxt("erdc_iceFire.txt")
@@ -96,7 +98,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         facecolor=cartopy.feature.COLORS['land']))
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlpeak_10km.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlpeak_10km_monthly.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 # Chl-a Init
@@ -118,7 +120,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         facecolor=cartopy.feature.COLORS['land']))
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlinit_10km.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlinit_10km_monthly.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 # Chl-a Term
@@ -140,7 +142,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         facecolor=cartopy.feature.COLORS['land']))
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlterm_10km.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlterm_10km_monthly.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 # Chl-a Int Nov-Feb
@@ -162,7 +164,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         facecolor=cartopy.feature.COLORS['land']))
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlintnovfeb_10km.png'
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\chlintnovfeb_10km_monthly.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%%
@@ -177,15 +179,16 @@ total_chla_novfeb_1D = total_chla_novfeb.ravel()
 month_chl_startafterwinter_1D = month_chl_startafterwinter.ravel()
 month_chl_stopafterspring_1D = month_chl_stopafterspring.ravel()
 total_chla_novfeb_1D = total_chla_novfeb.ravel()
+total_chla_decfeb_1D = total_chla_decfeb.ravel()
 map_indexes_1D_nonan = map_indexes_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 month_chl_max_1D_nonan = month_chl_max_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 chl_max_1D_nonan = chl_max_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 chl_mean_1D_nonan = chl_mean_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 chl_amp_1D_nonan = chl_amp_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 total_chla_novfeb_1D_nonan = total_chla_novfeb_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
+total_chla_decfeb_1D_nonan = total_chla_decfeb_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_decfeb_1D)][:18118]
 month_chl_startafterwinter_1D_nonan = month_chl_startafterwinter_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
 month_chl_stopafterspring_1D_nonan = month_chl_stopafterspring_1D[~np.isnan(month_chl_max_1D) & ~np.isnan(total_chla_novfeb_1D)]
-
 
 
 
@@ -196,11 +199,12 @@ x = [month_chl_max_1D_nonan,
      month_chl_startafterwinter_1D_nonan,
      month_chl_stopafterspring_1D_nonan,
      chl_amp_1D_nonan,
-     total_chla_novfeb_1D_nonan
+     total_chla_novfeb_1D_nonan,
+     total_chla_decfeb_1D_nonan
      ]
 df = pd.DataFrame(x)
 df = df.T
-df.columns = ['Peak', 'Mean', 'Initiation', 'Termination', 'Amplitude', 'Integrated Nov-Feb']
+df.columns = ['Peak', 'Mean', 'Initiation', 'Termination', 'Amplitude', 'Integrated Nov-Feb', 'Integrated Dec-Feb']
 import seaborn as sns
 corr = df.corr()
 mask = np.zeros_like(corr, dtype=np.bool)
@@ -226,7 +230,7 @@ plt.savefig(graphs_dir,format = 'png', dpi = 500)
 plt.close()
 
 from sklearn.cluster import AgglomerativeClustering
-cluster = AgglomerativeClustering(n_clusters=4, affinity='manhattan', linkage='average')  
+cluster = AgglomerativeClustering(n_clusters=5, affinity='manhattan', linkage='average')  
 cluster.fit_predict(data_scaled)
 y_hdbscan = cluster.labels_
 
@@ -236,6 +240,9 @@ map_indexes_1D_hdbscan_cluster2 = map_indexes_1D_nonan[y_hdbscan == 1] #cluster2
 map_indexes_1D_hdbscan_cluster3 = map_indexes_1D_nonan[y_hdbscan == 2] #cluster3
 map_indexes_1D_hdbscan_cluster4 = map_indexes_1D_nonan[y_hdbscan == 3] #cluster4
 map_indexes_1D_hdbscan_cluster5 = map_indexes_1D_nonan[y_hdbscan == 4] #cluster5
+map_indexes_1D_hdbscan_cluster6 = map_indexes_1D_nonan[y_hdbscan == 5] #cluster6
+map_indexes_1D_hdbscan_cluster7 = map_indexes_1D_nonan[y_hdbscan == 6] #cluster7
+
 # match
 map_clusters_hdbscan = np.empty((120,220))*np.nan
 for k in range(0,120):
@@ -250,7 +257,10 @@ for k in range(0,120):
             map_clusters_hdbscan[k,i] = 4
         elif map_indexes[k,i] in map_indexes_1D_hdbscan_cluster5:
             map_clusters_hdbscan[k,i] = 5
-
+        elif map_indexes[k,i] in map_indexes_1D_hdbscan_cluster6:
+            map_clusters_hdbscan[k,i] = 6
+        elif map_indexes[k,i] in map_indexes_1D_hdbscan_cluster7:
+            map_clusters_hdbscan[k,i] = 7
 #plot spatial clusters
 
 viridis = plt.cm.get_cmap('viridis', 5)
@@ -260,13 +270,16 @@ CoBa = np.array([153/256, 0, 204/256, 1]) #253,174,97
 CoMa = np.array([241/256, 180/256, 47/256, 1]) #255,255,191
 OcN = np.array([171/256, 221/256, 164/256, 1]) #171,221,164
 OcSW = np.array([43/256, 131/256, 186/256, 1]) #43,131,186
+other_cluster = np.array([100/256, 200/256, 186/256, 1]) #43,131,186
+other_cluster2 = np.array([100/256, 1/256, 256/256, 1]) #43,131,186
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 newcolors[0, :] = OcSW
 newcolors[1, :] = CoUp
 newcolors[2, :] = OcN
 newcolors[3, :] = CoMa
 newcolors[4, :] = CoBa
-
+#newcolors[5, :] = other_cluster
+#newcolors[6, :] = other_cluster
 newcmp = ListedColormap(newcolors)             
 
 plt.figure()

@@ -21,53 +21,44 @@ def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
     new_date = datetime.datetime(1900, 1, 1, 0, 0) + datetime.timedelta(hours=srl_no)
     return new_date
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\winds\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\winds\\')
 ### Load and join data
 files = os.listdir()
 for i in files:
     print(i)
     fh = Dataset(i, mode='r')
     if i == files[0]:
-        lat = np.array(fh['lat'])
-        lon = np.array(fh['lon'])
-        #sst = np.array(fh['analysed_sst'])
-        #sst[sst == -32768] = np.nan
-        #sst = sst-273.15
-        #sst = np.float16(sst)
-        #sst = np.swapaxes(np.swapaxes(sst, 0, 2), 0, 1)
-        eastward_wind = np.array(fh['eastward_wind'])
-        eastward_wind[eastward_wind == 9.969209968386869e+36] = np.nan
-        eastward_wind = np.float16(eastward_wind)
-        eastward_wind = np.swapaxes(np.swapaxes(eastward_wind, 0, 2), 0, 1)
-        northward_wind = np.array(fh['northward_wind'])
-        northward_wind[northward_wind == 9.969209968386869e+36] = np.nan
-        northward_wind = np.float16(northward_wind)
-        northward_wind = np.swapaxes(np.swapaxes(northward_wind, 0, 2), 0, 1)
+        lat = np.array(fh['latitude'])
+        lon = np.array(fh['longitude'])
+        wind_u = np.array(fh['u10'])
+        wind_u[wind_u == -32767] = np.nan
+        wind_u = np.swapaxes(np.swapaxes(wind_u, 0, 2), 0, 1)
+        wind_v = np.array(fh['v10'])
+        wind_v[wind_v == -32767] = np.nan
+        wind_v = np.swapaxes(np.swapaxes(wind_v, 0, 2), 0, 1)        
         time = np.array(fh['time'])
         #Converts to datetime
         time_date = np.empty((len(time)), dtype=object)
         for i in range(0, len(time)):
             time_date[i] = serial_date_to_string(int(time[i]))
     else:
-        northward_wind_temp = np.array(fh['northward_wind'])
-        northward_wind_temp[northward_wind_temp == 9.969209968386869e+36] = np.nan
-        northward_wind_temp = np.float16(northward_wind_temp)
-        northward_wind_temp = np.swapaxes(np.swapaxes(northward_wind_temp, 0, 2), 0, 1)
-        eastward_wind_temp = np.array(fh['eastward_wind'])
-        eastward_wind_temp[eastward_wind_temp == 9.969209968386869e+36] = np.nan
-        eastward_wind_temp = np.float16(eastward_wind_temp)
-        eastward_wind_temp = np.swapaxes(np.swapaxes(eastward_wind_temp, 0, 2), 0, 1)
+        wind_u_temp = np.array(fh['u10'])
+        wind_u_temp[wind_u_temp == -32767] = np.nan
+        wind_u_temp = np.swapaxes(np.swapaxes(wind_u_temp, 0, 2), 0, 1)
+        wind_v_temp = np.array(fh['v10'])
+        wind_v_temp[wind_v_temp == -32767] = np.nan
+        wind_v_temp = np.swapaxes(np.swapaxes(wind_v_temp, 0, 2), 0, 1)   
         time_temp = np.array(fh['time'])
         #Converts to datetime
         time_date_temp = np.empty((len(time_temp)), dtype=object)
         for i in range(0, len(time_temp)):
             time_date_temp[i] = serial_date_to_string(int(time_temp[i]))
-        
-        northward_wind = np.dstack((northward_wind, northward_wind_temp))
-        eastward_wind = np.dstack((eastward_wind, eastward_wind_temp))
+        # Stack
+        wind_u = np.dstack((wind_u, wind_u_temp))
+        wind_v = np.dstack((wind_v, wind_v_temp))
         time_date = np.hstack((time_date, time_date_temp))
-        print(time_date_temp[0])
+#        print(time_date_temp[0])
 
-np.savez_compressed('winds_19921996', northward_wind=northward_wind, #seaice=seaice,
-                    time_date=time_date, eastward_wind=eastward_wind,
+np.savez_compressed('winds_19972022_era5', #sst=sst, #seaice=seaice,
+                    time_date=time_date, wind_u=wind_u, wind_v=wind_v,
                     lat=lat, lon=lon)

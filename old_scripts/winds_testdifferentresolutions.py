@@ -18,7 +18,7 @@ from scipy import stats
 from netCDF4 import Dataset
 import datetime
 import cmocean
-from scipy.interpolate import RegularGridInterpolator
+import scipy
 
 def regrid(data, out_x, out_y):
     m = max(data.shape[0], data.shape[1])
@@ -38,18 +38,88 @@ os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\
 ### Load data 1998-2020
 fh = np.load('winds_19972019.npz', allow_pickle=True)
 lat = fh['lat']
-lat = np.flip(lat)
+#lat = np.flip(lat)
 lon = fh['lon']
 northward_wind = fh['northward_wind']
-northward_wind = np.flip(northward_wind)
+#northward_wind = np.flip(northward_wind)
 eastward_wind = fh['eastward_wind']
-eastward_wind = np.flip(eastward_wind)
+#eastward_wind = np.flip(eastward_wind)
 time_date = fh['time_date']
 time_date_years = np.empty_like(time_date)
 time_date_months = np.empty_like(time_date)
 for i in range(0, len(time_date)):
     time_date_years[i] = time_date[i].year
     time_date_months[i] = time_date[i].month
+
+# wind speed
+northward_wind_clim = np.nanmean(northward_wind, 2)
+eastward_wind_clim = np.nanmean(eastward_wind, 2)
+windspeed_clim = np.sqrt(northward_wind_clim**2 + eastward_wind_clim**2)
+
+#a = np.nanmean()
+#a[np.isnan(a)] = -999
+#%% Interpolate
+lat_10km = np.arange(-48, -70, -.1)
+lon_10km = np.arange(-73, -25, .1)
+#scipy.interpolate.interp2d(lon_10km, lon_10km, a, kind='linear', copy=True, bounds_error=False, fill_value=None)
+
+f = scipy.interpolate.interp2d(lon, lat, a, kind='linear')
+Z2 = f(lon_10km, lat_10km)
+
+#northward_wind[:,:,0]
+
+#zi = interpolate.griddata(northward_wind[:,:,0], z, xnew, method='linear')
+
+plt.figure()
+plt.pcolormesh(lon_10km, lat_10km, Z2, cmap=plt.cm.jet)
+
+#%%
+Z2[Z2<-10] = np.nan
+plt.figure()
+map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
+map.set_extent([-67, -53, -67, -60])
+f1 = map.pcolormesh(lon_10km, lat_10km, Z2[:-1,:-1], transform=ccrs.PlateCarree(), shading='flat', cmap=plt.cm.jet)
+gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
+cbar = plt.colorbar(f1,
+                    fraction=0.04, pad=0.1)
+#cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
+cbar.set_label('SST 10km', fontsize=14)
+#cbar.set_label('Valid Pixels (%)', fontsize=14)
+map.coastlines(resolution='10m', color='black', linewidth=1)
+map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
+                                        edgecolor='k',
+                                        facecolor=cartopy.feature.COLORS['land']))
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\winds_test.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+#%%
+plt.figure()
+map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
+map.set_extent([-67, -53, -67, -60])
+f1 = map.pcolormesh(lon, lat, northward_wind[:,:,0][:-1,:-1], transform=ccrs.PlateCarree(), shading='flat', cmap=plt.cm.jet)
+gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
+cbar = plt.colorbar(f1,
+                    fraction=0.04, pad=0.1)
+#cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
+cbar.set_label('SST 10km', fontsize=14)
+#cbar.set_label('Valid Pixels (%)', fontsize=14)
+map.coastlines(resolution='10m', color='black', linewidth=1)
+map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
+                                        edgecolor='k',
+                                        facecolor=cartopy.feature.COLORS['land']))
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\winds_test.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+
+
+
+
+
+
+
+
 #%%
 from scipy.interpolate import griddata
 lat_10km = np.arange(-48, -70, -.1)

@@ -2,7 +2,7 @@
 """
 Created on Fri Oct 30 16:33:06 2020
 
-@author: Afonso
+@author: afons\\OneDrive - Universidade de Lisboao
 """
 import os
 import numpy as np
@@ -12,6 +12,7 @@ import cartopy
 import cartopy.crs as ccrs
 from matplotlib.patches import Polygon
 from matplotlib.path import Path
+from matplotlib.colors import LinearSegmentedColormap
 from tqdm import tqdm
 import seaborn as sns
 from scipy import stats
@@ -59,8 +60,18 @@ def is_outlier(points, thresh=3.5):
     modified_z_score = 0.6745 * diff / med_abs_deviation
 
     return modified_z_score > thresh
-#os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
+def start_stop(a, trigger_val):
+    # "Enclose" mask with sentients to catch shifts later on
+    mask = np.r_[False,np.equal(a, trigger_val),False]
+
+    # Get the shifting indices
+    idx = np.flatnonzero(mask[1:] != mask[:-1])
+
+    # Get the start and end indices with slicing along the shifting ones
+    return zip(idx[::2], idx[1::2]-1)
+
+#os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
 ### Load data 1998-2020
 fh = np.load('chloc4so_19972021_10km.npz', allow_pickle=True)
 lat = fh['lat'][100:]
@@ -75,9 +86,9 @@ for i in range(0, len(time_date)):
 # Correct values
 chl[chl > 50] = 50
 # Load clusters
-fh = np.load('antarcticpeninsula_cluster.npz',allow_pickle = True)
+fh = np.load('antarcticpeninsula_newclusters_seaicebelow15.npz',allow_pickle = True)
 clusters = fh['clusters']
-#%% Separar para o cluster 1 (Weddell)
+#%% Separar para o cluster 1 (WEDi)
 weddell_cluster = chl[clusters == 1,:]
 weddell_cluster = np.nanmean(weddell_cluster,0)
 np.nanmedian(weddell_cluster)
@@ -86,6 +97,12 @@ np.nanmin(weddell_cluster)
 np.nanstd(weddell_cluster)*3
 weddell_cluster = np.where(weddell_cluster > np.nanmedian(weddell_cluster)-np.nanstd(weddell_cluster)*3, weddell_cluster, np.nan)
 weddell_cluster = np.where(weddell_cluster < np.nanmedian(weddell_cluster)+np.nanstd(weddell_cluster)*3, weddell_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(weddell_cluster, index=time_date)
+# Convert to monthly data
+#pixel_alldata_series_monthly = pixel_alldata_series.resample('W').mean()
+ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
+
 for i in np.arange(1998, 2022):
     ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
     # Extract august to may
@@ -100,54 +117,54 @@ for i in np.arange(1998, 2022):
         yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
         yeartemp_augmay = weddell_cluster[yeartemp_aug:yeartemp_may+1]
         yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)        
+    # Average Weekly
     yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
-    if np.size(yeartemp_augmay_pd_8day) == 39:
-        yeartemp_augmay_pd_8day = yeartemp_augmay_pd_8day[:-1]
-    # Average for 8 days
+    # Calculate Median 
+    chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
+    # Check which weeks are above 5% median
+    chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
+    # Check periods with consecutive weeks above 5% median
+    def start_valid_island(a, thresh, window_size):
+        m = a>thresh
+        me = np.r_[False,m,False]
+        idx = np.flatnonzero(me[:-1]!=me[1:])
+        lens = idx[1::2]-idx[::2]
+        return idx[::2][(lens >= window_size).argmax()]
+    b_peak = np.argmax(yeartemp_augmay_pd_8day)
+    chl_max = np.nanmax(yeartemp_augmay_pd_8day)
+    b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
+    b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+    b_dur = b_term - b_init + 1
+    b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
+    # Join data
     if i == 1998:
-        wed_augmay_8day = yeartemp_augmay_pd_8day.values
-        wed_augmay_8day_time = yeartemp_augmay_pd_8day.index
+        wed_chl_init = float(b_init)
+        wed_chl_peak = float(b_peak)
+        wed_chl_term = float(b_term)
+        wed_chl_max = float(chl_max)
+        wed_chl_area = float(b_area)
+        wed_chl_dur = float(b_dur)
     else:
-        wed_augmay_8day = np.vstack((wed_augmay_8day, yeartemp_augmay_pd_8day.values))
-
-#%% 
-wed_cluster_mean19972021 = np.nanmean(wed_augmay_8day,0)
-wed_cluster_19982005 = np.nanmean(wed_augmay_8day[:8,:], axis=0)
-wed_cluster_20062014 = np.nanmean(wed_augmay_8day[8:16,:], axis=0)
-wed_cluster_20152021 = np.nanmean(wed_augmay_8day[16:,:], axis=0)
-wed_yearlycicles_p90 = np.nanpercentile(wed_augmay_8day, 90, axis=0)
-wed_yearlycicles_p10 = np.nanpercentile(wed_augmay_8day, 10, axis=0)
-wed_yearlycicles_std = np.nanstd(wed_augmay_8day, axis=0)
-#%% Weddell Cluster Figure 1
-f_cubic = interp1d(np.arange(5,33),wed_cluster_mean19972021[4:-6], kind='cubic')
-xnew = np.linspace(5, 32, num=8, endpoint=True)
-#f_cubic_p90 = interp1d(np.arange(3,11),weddell_yearlycicles_p90[2:10], kind='cubic')
-#f_cubic_p10 = interp1d(np.arange(3,11),weddell_yearlycicles_p10[2:10], kind='cubic')
-plt.figure()
-#plt.plot(np.arange(1,13),weddell_cluster_mean19972021, color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021')
-plt.plot(xnew, f_cubic(xnew), color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021', zorder=2)
-
-plt.plot(np.arange(1,39),wed_cluster_19982005, color = 'k', linewidth = 1, linestyle='--', label='1997-2005', alpha=0.6, marker='o', zorder=1)
-plt.plot(np.arange(1,39),wed_cluster_20062014, color = 'k', linewidth = 1, linestyle=':', label='2005-2014', alpha=0.6, marker='s', zorder=1)
-plt.plot(np.arange(1,39),wed_cluster_20152021, color = 'k', linewidth = 1, linestyle='-.', label='2015-2021', alpha=0.6, marker='^', zorder=1)
-#plt.errorbar(np.arange(1,13),weddell_cluster_mean19972021, weddell_yearlycicles_std, linestyle='None', marker='None',
-#             color = [43/256, 131/256, 186/256, 1], alpha=0.5, capsize=10, elinewidth=1, markeredgewidth=1)
-plt.fill_between(np.arange(1,39), wed_cluster_mean19972021, wed_cluster_mean19972021+wed_yearlycicles_std, color =[43/256, 131/256, 186/256, 1], alpha=.2, edgecolor = None)
-plt.fill_between(np.arange(1,39), wed_cluster_mean19972021, wed_cluster_mean19972021-wed_yearlycicles_std, color =[43/256, 131/256, 186/256, 1], alpha=.2, edgecolor = None)
-#plt.fill_between(np.arange(1,13), weddell_cluster_mean19972021, weddell_cluster_mean19972021+weddell_yearlycicles_std, color =[43/256, 131/256, 186/256, 1], alpha=.2, edgecolor = None)
-#plt.fill_between(np.arange(1,13), weddell_cluster_mean19972021, weddell_cluster_mean19972021-weddell_yearlycicles_std, color =[43/256, 131/256, 186/256, 1], alpha=.2, edgecolor = None)
+        wed_chl_init = np.hstack((wed_chl_init, float(b_init)))
+        wed_chl_peak = np.hstack((wed_chl_peak, float(b_peak)))
+        wed_chl_term = np.hstack((wed_chl_term, float(b_term)))
+        wed_chl_max = np.hstack((wed_chl_max, float(chl_max)))
+        wed_chl_area = np.hstack((wed_chl_area, float(b_area)))
+        wed_chl_dur = np.hstack((wed_chl_dur, float(b_dur)))
 
 
-plt.xticks(ticks= [1, 5, 9, 13, 17, 21, 24, 28, 32, 36], labels=['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY'], fontsize=12)
-plt.xlim(5,32)
-plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
-plt.legend(fontsize=12, loc=2)
-plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\Weddell_8day_cycle.png'
-plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
-plt.close()
-#%% Separar para o cluster 2 (Gerlache)
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_init)], wed_chl_init[~np.isnan(wed_chl_init)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_peak)], wed_chl_peak[~np.isnan(wed_chl_peak)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_term)], wed_chl_term[~np.isnan(wed_chl_term)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_max)], wed_chl_max[~np.isnan(wed_chl_max)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_area)], wed_chl_area[~np.isnan(wed_chl_area)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wed_chl_dur)], wed_chl_dur[~np.isnan(wed_chl_dur)])
+
+np.savez_compressed('phenology_WEDi_10km', b_init=wed_chl_init,b_term=wed_chl_term,
+                    b_peak = wed_chl_peak, chl_max = wed_chl_max,
+                    b_area = wed_chl_area, b_dur = wed_chl_dur, time_years = np.arange(1998, 2022))
+#%% Separar para o cluster 2 (GES)
 gerlache_cluster = chl[clusters == 2,:]
 gerlache_cluster = np.nanmean(gerlache_cluster,0)
 np.nanmedian(gerlache_cluster)
@@ -156,6 +173,12 @@ np.nanmin(gerlache_cluster)
 np.nanstd(gerlache_cluster)*3
 gerlache_cluster = np.where(gerlache_cluster > np.nanmedian(gerlache_cluster)-np.nanstd(gerlache_cluster)*3, gerlache_cluster, np.nan)
 gerlache_cluster = np.where(gerlache_cluster < np.nanmedian(gerlache_cluster)+np.nanstd(gerlache_cluster)*3, gerlache_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(gerlache_cluster, index=time_date)
+# Convert to monthly data
+#pixel_alldata_series_monthly = pixel_alldata_series.resample('W').mean()
+ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
+
 for i in np.arange(1998, 2022):
     ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
     # Extract august to may
@@ -170,51 +193,334 @@ for i in np.arange(1998, 2022):
         yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
         yeartemp_augmay = gerlache_cluster[yeartemp_aug:yeartemp_may+1]
         yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)        
+    # Average Weekly
     yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
-    if np.size(yeartemp_augmay_pd_8day) == 39:
-        yeartemp_augmay_pd_8day = yeartemp_augmay_pd_8day[:-1]
-    # Average for 8 days
+    # Calculate Median 
+    chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
+    # Check which weeks are above 5% median
+    chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
+    # Check periods with consecutive weeks above 5% median
+    def start_valid_island(a, thresh, window_size):
+        m = a>thresh
+        me = np.r_[False,m,False]
+        idx = np.flatnonzero(me[:-1]!=me[1:])
+        lens = idx[1::2]-idx[::2]
+        return idx[::2][(lens >= window_size).argmax()]
+    b_peak = np.argmax(yeartemp_augmay_pd_8day)
+    chl_max = np.nanmax(yeartemp_augmay_pd_8day)
+    b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
+    b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+    b_dur = b_term - b_init + 1
+    b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
+    # Join data
     if i == 1998:
-        ger_augmay_8day = yeartemp_augmay_pd_8day.values
-        ger_augmay_8day_time = yeartemp_augmay_pd_8day.index
+        ger_chl_init = float(b_init)
+        ger_chl_peak = float(b_peak)
+        ger_chl_term = float(b_term)
+        ger_chl_max = float(chl_max)
+        ger_chl_area = float(b_area)
+        ger_chl_dur = float(b_dur)
     else:
-        ger_augmay_8day = np.vstack((ger_augmay_8day, yeartemp_augmay_pd_8day.values))
+        ger_chl_init = np.hstack((ger_chl_init, float(b_init)))
+        ger_chl_peak = np.hstack((ger_chl_peak, float(b_peak)))
+        ger_chl_term = np.hstack((ger_chl_term, float(b_term)))
+        ger_chl_max = np.hstack((ger_chl_max, float(chl_max)))
+        ger_chl_area = np.hstack((ger_chl_area, float(b_area)))
+        ger_chl_dur = np.hstack((ger_chl_dur, float(b_dur)))
 
-#%% 
-ger_cluster_mean19972021 = np.nanmean(ger_augmay_8day,0)
-ger_cluster_19982005 = np.nanmean(ger_augmay_8day[:8,:], axis=0)
-ger_augmay_8day[14,30] = np.nan
-ger_augmay_8day[14,31] = np.nan
-ger_cluster_20062014 = np.nanmean(ger_augmay_8day[8:16,:], axis=0)
-ger_cluster_20152021 = np.nanmean(ger_augmay_8day[16:,:], axis=0)
-ger_yearlycicles_p90 = np.nanpercentile(ger_augmay_8day, 90, axis=0)
-ger_yearlycicles_p10 = np.nanpercentile(ger_augmay_8day, 10, axis=0)
-ger_yearlycicles_std = np.nanstd(ger_augmay_8day, axis=0)
-#%% Gerlache Cluster Figure 1
-f_cubic = interp1d(np.arange(5,33),ger_cluster_mean19972021[4:-6], kind='cubic')
-xnew = np.linspace(5, 32, num=8, endpoint=True)
-#f_cubic_p90 = interp1d(np.arange(3,11),gerdell_yearlycicles_p90[2:10], kind='cubic')
-#f_cubic_p10 = interp1d(np.arange(3,11),gerdell_yearlycicles_p10[2:10], kind='cubic')
-plt.figure()
-#plt.plot(np.arange(1,13),gerdell_cluster_mean19972021, color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021')
-plt.plot(xnew, f_cubic(xnew), color = [215/256, 25/256, 28/256, 1], linewidth = 4, label='1997-2021', zorder=2)
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_init)], ger_chl_init[~np.isnan(ger_chl_init)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_peak)], ger_chl_peak[~np.isnan(ger_chl_peak)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_term)], ger_chl_term[~np.isnan(ger_chl_term)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_max)], ger_chl_max[~np.isnan(ger_chl_max)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_area)], ger_chl_area[~np.isnan(ger_chl_area)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(ger_chl_dur)], ger_chl_dur[~np.isnan(ger_chl_dur)])
 
-plt.plot(np.arange(1,39),ger_cluster_19982005, color = 'k', linewidth = 1, linestyle='--', label='1997-2005', alpha=0.6, marker='o', zorder=1)
-plt.plot(np.arange(1,39),ger_cluster_20062014, color = 'k', linewidth = 1, linestyle=':', label='2005-2014', alpha=0.6, marker='s', zorder=1)
-plt.plot(np.arange(1,39),ger_cluster_20152021, color = 'k', linewidth = 1, linestyle='-.', label='2015-2021', alpha=0.6, marker='^', zorder=1)
-#plt.errorbar(np.arange(1,13),gerdell_cluster_mean19972021, gerdell_yearlycicles_std, linestyle='None', marker='None',
-#             color = [43/256, 131/256, 186/256, 1], alpha=0.5, capsize=10, elinewidth=1, markeredgewidth=1)
-plt.fill_between(np.arange(1,39), ger_cluster_mean19972021, ger_cluster_mean19972021+ger_yearlycicles_std, color =[215/256, 25/256, 28/256, 1], alpha=.2, edgecolor = None)
-plt.fill_between(np.arange(1,39), ger_cluster_mean19972021, ger_cluster_mean19972021-ger_yearlycicles_std, color =[215/256, 25/256, 28/256, 1], alpha=.2, edgecolor = None)
-plt.xticks(ticks= [1, 5, 9, 13, 17, 21, 24, 28, 32, 36], labels=['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY'], fontsize=12)
-plt.xlim(5,32)
-plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
-plt.legend(fontsize=12, loc=2)
+np.savez_compressed('phenology_GES_10km', b_init=ger_chl_init,b_term=ger_chl_term,
+                    b_peak = ger_chl_peak, chl_max = ger_chl_max,
+                    b_area = ger_chl_area, b_dur = ger_chl_dur, time_years = np.arange(1998, 2022))
+#%% Separar para o cluster 3 (DRA)
+oceanic_cluster = chl[clusters == 3,:]
+oceanic_cluster = np.nanmean(oceanic_cluster,0)
+np.nanmedian(oceanic_cluster)
+np.nanmax(oceanic_cluster)
+np.nanmin(oceanic_cluster)
+np.nanstd(oceanic_cluster)*3
+oceanic_cluster = np.where(oceanic_cluster > np.nanmedian(oceanic_cluster)-np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
+oceanic_cluster = np.where(oceanic_cluster < np.nanmedian(oceanic_cluster)+np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(oceanic_cluster, index=time_date)
+# Convert to monthly data
+#pixel_alldata_series_monthly = pixel_alldata_series.resample('W').mean()
+ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
+
+for i in np.arange(1998, 2022):
+    ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
+    # Extract august to may
+    if i == 1998:
+        yeartemp_aug = 0
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = oceanic_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+    else:
+        yeartemp_aug = np.where((time_date_years == i-1) & (time_date_months == 8))[0][0]
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = oceanic_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)        
+    # Average Weekly
+    yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
+    # Calculate Median 
+    chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
+    # Check which weeks are above 5% median
+    chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
+    # Check periods with consecutive weeks above 5% median
+    def start_valid_island(a, thresh, window_size):
+        m = a>thresh
+        me = np.r_[False,m,False]
+        idx = np.flatnonzero(me[:-1]!=me[1:])
+        lens = idx[1::2]-idx[::2]
+        return idx[::2][(lens >= window_size).argmax()]
+    b_peak = np.argmax(yeartemp_augmay_pd_8day)
+    chl_max = np.nanmax(yeartemp_augmay_pd_8day)
+    b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
+    b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+    b_dur = b_term - b_init + 1
+    b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
+    # Join data
+    if i == 1998:
+        oce_chl_init = float(b_init)
+        oce_chl_peak = float(b_peak)
+        oce_chl_term = float(b_term)
+        oce_chl_max = float(chl_max)
+        oce_chl_area = float(b_area)
+        oce_chl_dur = float(b_dur)
+    else:
+        oce_chl_init = np.hstack((oce_chl_init, float(b_init)))
+        oce_chl_peak = np.hstack((oce_chl_peak, float(b_peak)))
+        oce_chl_term = np.hstack((oce_chl_term, float(b_term)))
+        oce_chl_max = np.hstack((oce_chl_max, float(chl_max)))
+        oce_chl_area = np.hstack((oce_chl_area, float(b_area)))
+        oce_chl_dur = np.hstack((oce_chl_dur, float(b_dur)))
+
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_init)], oce_chl_init[~np.isnan(oce_chl_init)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_peak)], oce_chl_peak[~np.isnan(oce_chl_peak)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_term)], oce_chl_term[~np.isnan(oce_chl_term)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_max)], oce_chl_max[~np.isnan(oce_chl_max)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_area)], oce_chl_area[~np.isnan(oce_chl_area)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(oce_chl_dur)], oce_chl_dur[~np.isnan(oce_chl_dur)])
+
+np.savez_compressed('phenology_DRA_10km', b_init=oce_chl_init,b_term=oce_chl_term,
+                    b_peak = oce_chl_peak, chl_max = oce_chl_max,
+                    b_area = oce_chl_area, b_dur = oce_chl_dur, time_years = np.arange(1998, 2022))
+#%% Separar para o cluster 4 (BRS)
+bransfield_cluster = chl[clusters == 4,:]
+bransfield_cluster = np.nanmean(bransfield_cluster,0)
+np.nanmedian(bransfield_cluster)
+np.nanmax(bransfield_cluster)
+np.nanmin(bransfield_cluster)
+np.nanstd(bransfield_cluster)*3
+bransfield_cluster = np.where(bransfield_cluster > np.nanmedian(bransfield_cluster)-np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
+bransfield_cluster = np.where(bransfield_cluster < np.nanmedian(bransfield_cluster)+np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(bransfield_cluster, index=time_date)
+# Convert to monthly data
+#pixel_alldata_series_monthly = pixel_alldata_series.resample('W').mean()
+ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
+
+for i in np.arange(1998, 2022):
+    ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
+    # Extract august to may
+    if i == 1998:
+        yeartemp_aug = 0
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = bransfield_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+    else:
+        yeartemp_aug = np.where((time_date_years == i-1) & (time_date_months == 8))[0][0]
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = bransfield_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)        
+    # Average Weekly
+    yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
+    # Calculate Median 
+    chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
+    # Check which weeks are above 5% median
+    chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
+    # Check periods with consecutive weeks above 5% median
+    def start_valid_island(a, thresh, window_size):
+        m = a>thresh
+        me = np.r_[False,m,False]
+        idx = np.flatnonzero(me[:-1]!=me[1:])
+        lens = idx[1::2]-idx[::2]
+        return idx[::2][(lens >= window_size).argmax()]
+    b_peak = np.argmax(yeartemp_augmay_pd_8day)
+    chl_max = np.nanmax(yeartemp_augmay_pd_8day)
+    b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
+    b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+    b_dur = b_term - b_init + 1
+    b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
+    # Join data
+    if i == 1998:
+        bra_chl_init = float(b_init)
+        bra_chl_peak = float(b_peak)
+        bra_chl_term = float(b_term)
+        bra_chl_max = float(chl_max)
+        bra_chl_area = float(b_area)
+        bra_chl_dur = float(b_dur)
+    else:
+        bra_chl_init = np.hstack((bra_chl_init, float(b_init)))
+        bra_chl_peak = np.hstack((bra_chl_peak, float(b_peak)))
+        bra_chl_term = np.hstack((bra_chl_term, float(b_term)))
+        bra_chl_max = np.hstack((bra_chl_max, float(chl_max)))
+        bra_chl_area = np.hstack((bra_chl_area, float(b_area)))
+        bra_chl_dur = np.hstack((bra_chl_dur, float(b_dur)))
+
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_init)], bra_chl_init[~np.isnan(bra_chl_init)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_peak)], bra_chl_peak[~np.isnan(bra_chl_peak)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_term)], bra_chl_term[~np.isnan(bra_chl_term)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_max)], bra_chl_max[~np.isnan(bra_chl_max)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_area)], bra_chl_area[~np.isnan(bra_chl_area)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(bra_chl_dur)], bra_chl_dur[~np.isnan(bra_chl_dur)])
+np.savez_compressed('phenology_BRS_10km', b_init=bra_chl_init,b_term=bra_chl_term,
+                    b_peak = bra_chl_peak, chl_max = bra_chl_max,
+                    b_area = bra_chl_area, b_dur = bra_chl_dur, time_years = np.arange(1998, 2022))
+#%% Separar para o cluster 5 (WEDo)
+wedo_cluster = chl[clusters == 5,:]
+wedo_cluster = np.nanmean(wedo_cluster,0)
+np.nanmedian(wedo_cluster)
+np.nanmax(wedo_cluster)
+np.nanmin(wedo_cluster)
+np.nanstd(wedo_cluster)*3
+wedo_cluster = np.where(wedo_cluster > np.nanmedian(wedo_cluster)-np.nanstd(wedo_cluster)*3, wedo_cluster, np.nan)
+wedo_cluster = np.where(wedo_cluster < np.nanmedian(wedo_cluster)+np.nanstd(wedo_cluster)*3, wedo_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(wedo_cluster, index=time_date)
+# Convert to monthly data
+#pixel_alldata_series_monthly = pixel_alldata_series.resample('W').mean()
+ix = pd.date_range(start=datetime.date(1997, 8, 1), end=datetime.date(1998, 5, 31), freq='D')
+
+for i in np.arange(1998, 2022):
+    ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
+    # Extract august to may
+    if i == 1998:
+        yeartemp_aug = 0
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = wedo_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+    else:
+        yeartemp_aug = np.where((time_date_years == i-1) & (time_date_months == 8))[0][0]
+        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
+        yeartemp_augmay = wedo_cluster[yeartemp_aug:yeartemp_may+1]
+        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
+        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)        
+    # Average Weekly
+    yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
+    # Calculate Median 
+    chl_median = np.nanmedian(yeartemp_augmay_pd_8day.values)
+    # Check which weeks are above 5% median
+    chl_weeksabovemedian5 = yeartemp_augmay_pd_8day > chl_median*1.05
+    # Check periods with consecutive weeks above 5% median
+    def start_valid_island(a, thresh, window_size):
+        m = a>thresh
+        me = np.r_[False,m,False]
+        idx = np.flatnonzero(me[:-1]!=me[1:])
+        lens = idx[1::2]-idx[::2]
+        return idx[::2][(lens >= window_size).argmax()]
+    b_peak = np.argmax(yeartemp_augmay_pd_8day)
+    chl_max = np.nanmax(yeartemp_augmay_pd_8day)
+    b_init = start_valid_island(yeartemp_augmay_pd_8day.values, chl_median*1.05, 2)
+    b_term = 38 - 1 - start_valid_island(yeartemp_augmay_pd_8day.values[::-1], chl_median*1.05, 2)
+    b_dur = b_term - b_init + 1
+    b_area = np.nansum(yeartemp_augmay_pd_8day.values[b_init:b_term+1])/np.sum(~np.isnan(yeartemp_augmay_pd_8day.values[b_init:b_term+1]))
+    # Join data
+    if i == 1998:
+        wedo_chl_init = float(b_init)
+        wedo_chl_peak = float(b_peak)
+        wedo_chl_term = float(b_term)
+        wedo_chl_max = float(chl_max)
+        wedo_chl_area = float(b_area)
+        wedo_chl_dur = float(b_dur)
+    else:
+        wedo_chl_init = np.hstack((wedo_chl_init, float(b_init)))
+        wedo_chl_peak = np.hstack((wedo_chl_peak, float(b_peak)))
+        wedo_chl_term = np.hstack((wedo_chl_term, float(b_term)))
+        wedo_chl_max = np.hstack((wedo_chl_max, float(chl_max)))
+        wedo_chl_area = np.hstack((wedo_chl_area, float(b_area)))
+        wedo_chl_dur = np.hstack((wedo_chl_dur, float(b_dur)))
+
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_init)], wedo_chl_init[~np.isnan(wedo_chl_init)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_peak)], wedo_chl_peak[~np.isnan(wedo_chl_peak)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_term)], wedo_chl_term[~np.isnan(wedo_chl_term)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_max)], wedo_chl_max[~np.isnan(wedo_chl_max)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_area)], wedo_chl_area[~np.isnan(wedo_chl_area)])
+stats.linregress(np.arange(1998, 2022)[~np.isnan(wedo_chl_dur)], wedo_chl_dur[~np.isnan(wedo_chl_dur)])
+np.savez_compressed('phenology_WEDo_10km', b_init=wedo_chl_init,b_term=wedo_chl_term,
+                    b_peak = wedo_chl_peak, chl_max = wedo_chl_max,
+                    b_area = wedo_chl_area, b_dur = wedo_chl_dur, time_years = np.arange(1998, 2022))
+#%% Plot
+cmap_data = np.loadtxt("erdc_iceFire.txt")
+cmap_new = LinearSegmentedColormap.from_list('my_colormap', cmap_data)
+sns.heatmap([wed_chl_init[1:], wed_chl_peak[1:], wed_chl_term[1:],
+             ger_chl_init[1:], ger_chl_peak[1:], ger_chl_term[1:],
+             bra_chl_init[1:], bra_chl_peak[1:], bra_chl_term[1:],
+             oce_chl_init[1:], oce_chl_peak[1:], oce_chl_term[1:],
+             wedo_chl_init[1:], wedo_chl_init[1:], wedo_chl_init[1:]], square=True, annot=True,
+            vmin=1, vmax=38, cmap=cmap_new, cbar_kws={"fraction":0.025, "pad":0.05})
+plt.yticks(ticks=np.arange(0.5, 12), labels = ['INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM'], rotation = 360)
+plt.xticks(ticks=np.arange(0.5, 23), labels = ['99', '00', '01', '02', '03', '04',
+                                                  '05', '06', '07', '08', '09', '10',
+                                                  '11', '12', '13', '14', '15', '16',
+                                                  '17', '18', '19', '20', '21'])
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\Gerlache_8day_cycle.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\phenologycomparison_percluster.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
+
+
+
+
+
+#stats.linregress(np.arange(1999, 2022), wed_may_1_15[1:])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #%% Separar para o cluster 3 (Oceanic)
 oceanic_cluster = chl[clusters == 3,:]
 oceanic_cluster = np.nanmean(oceanic_cluster,0)
@@ -224,65 +530,74 @@ np.nanmin(oceanic_cluster)
 np.nanstd(oceanic_cluster)*3
 oceanic_cluster = np.where(oceanic_cluster > np.nanmedian(oceanic_cluster)-np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
 oceanic_cluster = np.where(oceanic_cluster < np.nanmedian(oceanic_cluster)+np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(oceanic_cluster, index=time_date)
+# Convert to monthly data
+pixel_alldata_series_monthly = pixel_alldata_series.resample('M').mean()
 for i in np.arange(1998, 2022):
-    ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
-    # Extract august to may
+    yeartemp_aug = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 8)]    
+    yeartemp_sep = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 10)]
+    yeartemp_nov = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 11)]
+    yeartemp_dec = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 12)]
+    yeartemp_jan = oceanic_cluster[(time_date_years == i) & (time_date_months == 1)]
+    yeartemp_feb = oceanic_cluster[(time_date_years == i) & (time_date_months == 2)]
+    yeartemp_mar = oceanic_cluster[(time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = oceanic_cluster[(time_date_years == i) & (time_date_months == 4)]
+    yeartemp_may = oceanic_cluster[(time_date_years == i) & (time_date_months == 5)]
     if i == 1998:
-        yeartemp_aug = 0
-        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
-        yeartemp_augmay = oceanic_cluster[yeartemp_aug:yeartemp_may+1]
-        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+        years_aug_19982021 = np.nanmean(yeartemp_aug)
+        years_sep_19982021 = np.nanmean(yeartemp_sep)
+        years_oct_19982021 = np.nanmean(yeartemp_oct)
+        years_nov_19982021 = np.nanmean(yeartemp_nov)
+        years_dec_19982021 = np.nanmean(yeartemp_dec)
+        years_jan_19982021 = np.nanmean(yeartemp_jan)
+        years_feb_19982021 = np.nanmean(yeartemp_feb)
+        years_mar_19982021 = np.nanmean(yeartemp_mar)
+        years_apr_19982021 = np.nanmean(yeartemp_apr)
+        years_may_19982021 = np.nanmean(yeartemp_may)
     else:
-        yeartemp_aug = np.where((time_date_years == i-1) & (time_date_months == 8))[0][0]
-        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
-        yeartemp_augmay = oceanic_cluster[yeartemp_aug:yeartemp_may+1]
-        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
-    yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
-    if np.size(yeartemp_augmay_pd_8day) == 39:
-        yeartemp_augmay_pd_8day = yeartemp_augmay_pd_8day[:-1]
-    # Average for 8 days
-    if i == 1998:
-        oce_augmay_8day = yeartemp_augmay_pd_8day.values
-        oce_augmay_8day_time = yeartemp_augmay_pd_8day.index
+        years_aug_19982021 = np.hstack((years_aug_19982021, np.nanmean(yeartemp_aug)))
+        years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
+        years_oct_19982021 = np.hstack((years_oct_19982021, np.nanmean(yeartemp_oct)))
+        years_nov_19982021 = np.hstack((years_nov_19982021, np.nanmean(yeartemp_nov)))
+        years_dec_19982021 = np.hstack((years_dec_19982021, np.nanmean(yeartemp_dec)))
+        years_jan_19982021 = np.hstack((years_jan_19982021, np.nanmean(yeartemp_jan)))
+        years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
+        years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
+        years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
+        years_may_19982021 = np.hstack((years_may_19982021, np.nanmean(yeartemp_may)))
+
+yearlycycle_oceanic_19982021 = np.vstack((years_aug_19982021, years_sep_19982021, years_oct_19982021,
+                                          years_nov_19982021, years_dec_19982021, years_jan_19982021,
+                                          years_feb_19982021, years_mar_19982021, years_apr_19982021,
+                                          years_may_19982021))
+months_inds = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5]
+# Calculate fenology
+for i in range(0,24):
+    yearlycycletemp = yearlycycle_oceanic_19982021[:,i]
+    # First month with Chl-a
+    chl_init_temp = months_inds[np.argmax(~np.isnan(yearlycycletemp))]
+    # Month with peak Chl-a
+    chl_peak_temp = months_inds[np.nanargmax(yearlycycletemp)]
+    # Last month with Chl-a
+    chl_term_temp = months_inds[9-np.argmax(~np.isnan(yearlycycletemp[::-1]))]    
+    # Max Chl-a
+    chl_max_temp = np.nanmax(yearlycycle_oceanic_19982021[:,i])
+    # Chl-a Area
+    chl_area_temp = integrate.simps(yearlycycle_gerlache_19982021[3:7,i])
+    if i == 0:
+        chl_init_all_gerlache = chl_init_temp
+        chl_peak_all_gerlache = chl_peak_temp
+        chl_term_all_gerlache = chl_term_temp
+        chl_max_all_gerlache = chl_max_temp
+        chl_area_all_gerlache = chl_area_temp
     else:
-        oce_augmay_8day = np.vstack((oce_augmay_8day, yeartemp_augmay_pd_8day.values))
-
-#%% 
-oce_cluster_mean19972021 = np.nanmean(oce_augmay_8day,0)
-oce_cluster_19982005 = np.nanmean(oce_augmay_8day[:8,:], axis=0)
-#oce_augmay_8day[14,30] = np.nan
-#oce_augmay_8day[14,31] = np.nan
-oce_cluster_20062014 = np.nanmean(oce_augmay_8day[8:16,:], axis=0)
-oce_cluster_20152021 = np.nanmean(oce_augmay_8day[16:,:], axis=0)
-oce_yearlycicles_p90 = np.nanpercentile(oce_augmay_8day, 90, axis=0)
-oce_yearlycicles_p10 = np.nanpercentile(oce_augmay_8day, 10, axis=0)
-oce_yearlycicles_std = np.nanstd(oce_augmay_8day, axis=0)
-#%% Oceanic Cluster Figure 1
-f_cubic = interp1d(np.arange(5,33),oce_cluster_mean19972021[4:-6], kind='cubic')
-xnew = np.linspace(5, 32, num=8, endpoint=True)
-#f_cubic_p90 = interp1d(np.arange(3,11),ocedell_yearlycicles_p90[2:10], kind='cubic')
-#f_cubic_p10 = interp1d(np.arange(3,11),ocedell_yearlycicles_p10[2:10], kind='cubic')
-plt.figure()
-#plt.plot(np.arange(1,13),ocedell_cluster_mean19972021, color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021')
-plt.plot(xnew, f_cubic(xnew), color = '#d09c26', linewidth = 4, label='1997-2021', zorder=2)
-
-plt.plot(np.arange(1,39),oce_cluster_19982005, color = 'k', linewidth = 1, linestyle='--', label='1997-2005', alpha=0.6, marker='o', zorder=1)
-plt.plot(np.arange(1,39),oce_cluster_20062014, color = 'k', linewidth = 1, linestyle=':', label='2005-2014', alpha=0.6, marker='s', zorder=1)
-plt.plot(np.arange(1,39),oce_cluster_20152021, color = 'k', linewidth = 1, linestyle='-.', label='2015-2021', alpha=0.6, marker='^', zorder=1)
-#plt.errorbar(np.arange(1,13),ocedell_cluster_mean19972021, ocedell_yearlycicles_std, linestyle='None', marker='None',
-#             color = [43/256, 131/256, 186/256, 1], alpha=0.5, capsize=10, elinewidth=1, markeredgewidth=1)
-plt.fill_between(np.arange(1,39), oce_cluster_mean19972021, oce_cluster_mean19972021+oce_yearlycicles_std, color ='#d09c26', alpha=.2, edgecolor = None)
-plt.fill_between(np.arange(1,39), oce_cluster_mean19972021, oce_cluster_mean19972021-oce_yearlycicles_std, color ='#d09c26', alpha=.2, edgecolor = None)
-plt.xticks(ticks= [1, 5, 9, 13, 17, 21, 24, 28, 32, 36], labels=['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY'], fontsize=12)
-plt.xlim(5,32)
-plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
-plt.legend(fontsize=12, loc=2)
-plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\Oceanic_8day_cycle.png'
-plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
-plt.close()
+        chl_init_all_gerlache = np.hstack((chl_init_all_gerlache, chl_init_temp))
+        chl_peak_all_gerlache = np.hstack((chl_peak_all_gerlache, chl_peak_temp))
+        chl_term_all_gerlache = np.hstack((chl_term_all_gerlache, chl_term_temp))
+        chl_max_all_gerlache = np.hstack((chl_max_all_gerlache, chl_max_temp))
+        chl_area_all_gerlache = np.hstack((chl_area_all_gerlache, chl_area_temp))
 #%% Separar para o cluster 4 (Bransfield)
 bransfield_cluster = chl[clusters == 4,:]
 bransfield_cluster = np.nanmean(bransfield_cluster,0)
@@ -292,82 +607,191 @@ np.nanmin(bransfield_cluster)
 np.nanstd(bransfield_cluster)*3
 bransfield_cluster = np.where(bransfield_cluster > np.nanmedian(bransfield_cluster)-np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
 bransfield_cluster = np.where(bransfield_cluster < np.nanmedian(bransfield_cluster)+np.nanstd(bransfield_cluster)*3, bransfield_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(bransfield_cluster, index=time_date)
+# Convert to monthly data
+pixel_alldata_series_monthly = pixel_alldata_series.resample('M').mean()
 for i in np.arange(1998, 2022):
-    ix = pd.date_range(start=datetime.date(i-1, 8, 1), end=datetime.date(i, 5, 31), freq='D')
-    # Extract august to may
+    yeartemp_aug = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 8)]    
+    yeartemp_sep = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 10)]
+    yeartemp_nov = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 11)]
+    yeartemp_dec = bransfield_cluster[(time_date_years == i-1) & (time_date_months == 12)]
+    yeartemp_jan = bransfield_cluster[(time_date_years == i) & (time_date_months == 1)]
+    yeartemp_feb = bransfield_cluster[(time_date_years == i) & (time_date_months == 2)]
+    yeartemp_mar = bransfield_cluster[(time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = bransfield_cluster[(time_date_years == i) & (time_date_months == 4)]
+    yeartemp_may = bransfield_cluster[(time_date_years == i) & (time_date_months == 5)]
     if i == 1998:
-        yeartemp_aug = 0
-        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
-        yeartemp_augmay = bransfield_cluster[yeartemp_aug:yeartemp_may+1]
-        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
+        years_aug_19982021 = np.nanmean(yeartemp_aug)
+        years_sep_19982021 = np.nanmean(yeartemp_sep)
+        years_oct_19982021 = np.nanmean(yeartemp_oct)
+        years_nov_19982021 = np.nanmean(yeartemp_nov)
+        years_dec_19982021 = np.nanmean(yeartemp_dec)
+        years_jan_19982021 = np.nanmean(yeartemp_jan)
+        years_feb_19982021 = np.nanmean(yeartemp_feb)
+        years_mar_19982021 = np.nanmean(yeartemp_mar)
+        years_apr_19982021 = np.nanmean(yeartemp_apr)
+        years_may_19982021 = np.nanmean(yeartemp_may)
     else:
-        yeartemp_aug = np.where((time_date_years == i-1) & (time_date_months == 8))[0][0]
-        yeartemp_may = np.where((time_date_years == i) & (time_date_months == 5))[-1][-1]
-        yeartemp_augmay = bransfield_cluster[yeartemp_aug:yeartemp_may+1]
-        yeartemp_augmay_pd = pd.Series(yeartemp_augmay, index=time_date[yeartemp_aug:yeartemp_may+1])
-        yeartemp_augmay_pd = yeartemp_augmay_pd.reindex(ix)
-    yeartemp_augmay_pd_8day = yeartemp_augmay_pd.resample('8D').mean()
-    if np.size(yeartemp_augmay_pd_8day) == 39:
-        yeartemp_augmay_pd_8day = yeartemp_augmay_pd_8day[:-1]
-    # Average for 8 days
+        years_aug_19982021 = np.hstack((years_aug_19982021, np.nanmean(yeartemp_aug)))
+        years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
+        years_oct_19982021 = np.hstack((years_oct_19982021, np.nanmean(yeartemp_oct)))
+        years_nov_19982021 = np.hstack((years_nov_19982021, np.nanmean(yeartemp_nov)))
+        years_dec_19982021 = np.hstack((years_dec_19982021, np.nanmean(yeartemp_dec)))
+        years_jan_19982021 = np.hstack((years_jan_19982021, np.nanmean(yeartemp_jan)))
+        years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
+        years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
+        years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
+        years_may_19982021 = np.hstack((years_may_19982021, np.nanmean(yeartemp_may)))
+
+yearlycycle_bransfield_19982021 = np.vstack((years_aug_19982021, years_sep_19982021, years_oct_19982021,
+                                          years_nov_19982021, years_dec_19982021, years_jan_19982021,
+                                          years_feb_19982021, years_mar_19982021, years_apr_19982021,
+                                          years_may_19982021))
+months_inds = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5]
+# Calculate fenology
+for i in range(0,24):
+    yearlycycletemp = yearlycycle_bransfield_19982021[:,i]
+    # First month with Chl-a
+    chl_init_temp = months_inds[np.argmax(~np.isnan(yearlycycletemp))]
+    # Month with peak Chl-a
+    chl_peak_temp = months_inds[np.nanargmax(yearlycycletemp)]
+    # Last month with Chl-a
+    chl_term_temp = months_inds[9-np.argmax(~np.isnan(yearlycycletemp[::-1]))]    
+    # Max Chl-a
+    chl_max_temp = np.nanmax(yearlycycle_bransfield_19982021[:,i])
+    # Chl-a Area
+    chl_area_temp = integrate.simps(yearlycycle_bransfield_19982021[3:7,i])
+    if i == 0:
+        chl_init_all_bransfield = chl_init_temp
+        chl_peak_all_bransfield = chl_peak_temp
+        chl_term_all_bransfield = chl_term_temp
+        chl_max_all_bransfield = chl_max_temp
+        chl_area_all_bransfield = chl_area_temp
+    else:
+        chl_init_all_bransfield = np.hstack((chl_init_all_bransfield, chl_init_temp))
+        chl_peak_all_bransfield = np.hstack((chl_peak_all_bransfield, chl_peak_temp))
+        chl_term_all_bransfield = np.hstack((chl_term_all_bransfield, chl_term_temp))
+        chl_max_all_bransfield = np.hstack((chl_max_all_bransfield, chl_max_temp))
+        chl_area_all_bransfield = np.hstack((chl_area_all_bransfield, chl_area_temp))
+#%% Separar para o cluster 3 (Oceanic)
+oceanic_cluster = chl[clusters == 3,:]
+oceanic_cluster = np.nanmean(oceanic_cluster,0)
+np.nanmedian(oceanic_cluster)
+np.nanmax(oceanic_cluster)
+np.nanmin(oceanic_cluster)
+np.nanstd(oceanic_cluster)*3
+oceanic_cluster = np.where(oceanic_cluster > np.nanmedian(oceanic_cluster)-np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
+oceanic_cluster = np.where(oceanic_cluster < np.nanmedian(oceanic_cluster)+np.nanstd(oceanic_cluster)*3, oceanic_cluster, np.nan)
+# Convert to pandas series
+pixel_alldata_series = pd.Series(oceanic_cluster, index=time_date)
+# Convert to monthly data
+pixel_alldata_series_monthly = pixel_alldata_series.resample('M').mean()
+for i in np.arange(1998, 2022):
+    yeartemp_aug = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 8)]    
+    yeartemp_sep = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 9)]
+    yeartemp_oct = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 10)]
+    yeartemp_nov = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 11)]
+    yeartemp_dec = oceanic_cluster[(time_date_years == i-1) & (time_date_months == 12)]
+    yeartemp_jan = oceanic_cluster[(time_date_years == i) & (time_date_months == 1)]
+    yeartemp_feb = oceanic_cluster[(time_date_years == i) & (time_date_months == 2)]
+    yeartemp_mar = oceanic_cluster[(time_date_years == i) & (time_date_months == 3)]
+    yeartemp_apr = oceanic_cluster[(time_date_years == i) & (time_date_months == 4)]
+    yeartemp_may = oceanic_cluster[(time_date_years == i) & (time_date_months == 5)]
     if i == 1998:
-        bra_augmay_8day = yeartemp_augmay_pd_8day.values
-        bra_augmay_8day_time = yeartemp_augmay_pd_8day.index
+        years_aug_19982021 = np.nanmean(yeartemp_aug)
+        years_sep_19982021 = np.nanmean(yeartemp_sep)
+        years_oct_19982021 = np.nanmean(yeartemp_oct)
+        years_nov_19982021 = np.nanmean(yeartemp_nov)
+        years_dec_19982021 = np.nanmean(yeartemp_dec)
+        years_jan_19982021 = np.nanmean(yeartemp_jan)
+        years_feb_19982021 = np.nanmean(yeartemp_feb)
+        years_mar_19982021 = np.nanmean(yeartemp_mar)
+        years_apr_19982021 = np.nanmean(yeartemp_apr)
+        years_may_19982021 = np.nanmean(yeartemp_may)
     else:
-        bra_augmay_8day = np.vstack((bra_augmay_8day, yeartemp_augmay_pd_8day.values))
+        years_aug_19982021 = np.hstack((years_aug_19982021, np.nanmean(yeartemp_aug)))
+        years_sep_19982021 = np.hstack((years_sep_19982021, np.nanmean(yeartemp_sep)))
+        years_oct_19982021 = np.hstack((years_oct_19982021, np.nanmean(yeartemp_oct)))
+        years_nov_19982021 = np.hstack((years_nov_19982021, np.nanmean(yeartemp_nov)))
+        years_dec_19982021 = np.hstack((years_dec_19982021, np.nanmean(yeartemp_dec)))
+        years_jan_19982021 = np.hstack((years_jan_19982021, np.nanmean(yeartemp_jan)))
+        years_feb_19982021 = np.hstack((years_feb_19982021, np.nanmean(yeartemp_feb)))
+        years_mar_19982021 = np.hstack((years_mar_19982021, np.nanmean(yeartemp_mar)))
+        years_apr_19982021 = np.hstack((years_apr_19982021, np.nanmean(yeartemp_apr)))
+        years_may_19982021 = np.hstack((years_may_19982021, np.nanmean(yeartemp_may)))
 
-#%% 
-bra_cluster_mean19972021 = np.nanmean(bra_augmay_8day,0)
-bra_cluster_19982005 = np.nanmean(bra_augmay_8day[:8,:], axis=0)
-#bra_augmay_8day[14,30] = np.nan
-#bra_augmay_8day[14,31] = np.nan
-bra_cluster_20062014 = np.nanmean(bra_augmay_8day[8:16,:], axis=0)
-bra_cluster_20152021 = np.nanmean(bra_augmay_8day[16:,:], axis=0)
-bra_yearlycicles_p90 = np.nanpercentile(bra_augmay_8day, 90, axis=0)
-bra_yearlycicles_p10 = np.nanpercentile(bra_augmay_8day, 10, axis=0)
-bra_yearlycicles_std = np.nanstd(bra_augmay_8day, axis=0)
-#%% Bransfield Cluster Figure 1
-f_cubic = interp1d(np.arange(5,33),bra_cluster_mean19972021[4:-6], kind='cubic')
-xnew = np.linspace(5, 32, num=8, endpoint=True)
-#f_cubic_p90 = interp1d(np.arange(3,11),bradell_yearlycicles_p90[2:10], kind='cubic')
-#f_cubic_p10 = interp1d(np.arange(3,11),bradell_yearlycicles_p10[2:10], kind='cubic')
-plt.figure()
-#plt.plot(np.arange(1,13),bradell_cluster_mean19972021, color = [43/256, 131/256, 186/256, 1], linewidth = 4, label='1997-2021')
-plt.plot(xnew, f_cubic(xnew), color = '#9800cb', linewidth = 4, label='1997-2021', zorder=2)
-
-plt.plot(np.arange(1,39),bra_cluster_19982005, color = 'k', linewidth = 1, linestyle='--', label='1997-2005', alpha=0.6, marker='o', zorder=1)
-plt.plot(np.arange(1,39),bra_cluster_20062014, color = 'k', linewidth = 1, linestyle=':', label='2005-2014', alpha=0.6, marker='s', zorder=1)
-plt.plot(np.arange(1,39),bra_cluster_20152021, color = 'k', linewidth = 1, linestyle='-.', label='2015-2021', alpha=0.6, marker='^', zorder=1)
-#plt.errorbar(np.arange(1,13),bradell_cluster_mean19972021, bradell_yearlycicles_std, linestyle='None', marker='None',
-#             color = [43/256, 131/256, 186/256, 1], alpha=0.5, capsize=10, elinewidth=1, markeredgewidth=1)
-plt.fill_between(np.arange(1,39), bra_cluster_mean19972021, bra_cluster_mean19972021+bra_yearlycicles_std, color ='#9800cb', alpha=.2, edgecolor = None)
-plt.fill_between(np.arange(1,39), bra_cluster_mean19972021, bra_cluster_mean19972021-bra_yearlycicles_std, color ='#9800cb', alpha=.2, edgecolor = None)
-plt.xticks(ticks= [1, 5, 9, 13, 17, 21, 24, 28, 32, 36], labels=['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR', 'APR', 'MAY'], fontsize=12)
-plt.xlim(5,32)
-plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
-plt.legend(fontsize=12, loc=2)
+yearlycycle_oceanic_19982021 = np.vstack((years_aug_19982021, years_sep_19982021, years_oct_19982021,
+                                          years_nov_19982021, years_dec_19982021, years_jan_19982021,
+                                          years_feb_19982021, years_mar_19982021, years_apr_19982021,
+                                          years_may_19982021))
+months_inds = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5]
+# Calculate fenology
+for i in range(0,24):
+    yearlycycletemp = yearlycycle_oceanic_19982021[:,i]
+    # First month with Chl-a
+    chl_init_temp = months_inds[np.argmax(~np.isnan(yearlycycletemp))]
+    # Month with peak Chl-a
+    chl_peak_temp = months_inds[np.nanargmax(yearlycycletemp)]
+    # Last month with Chl-a
+    chl_term_temp = months_inds[9-np.argmax(~np.isnan(yearlycycletemp[::-1]))]    
+    # Max Chl-a
+    chl_max_temp = np.nanmax(yearlycycle_oceanic_19982021[:,i])
+    # Chl-a Area
+    chl_area_temp = integrate.simps(yearlycycle_oceanic_19982021[3:7,i])
+    if i == 0:
+        chl_init_all_oceanic = chl_init_temp
+        chl_peak_all_oceanic = chl_peak_temp
+        chl_term_all_oceanic = chl_term_temp
+        chl_max_all_oceanic = chl_max_temp
+        chl_area_all_oceanic = chl_area_temp
+    else:
+        chl_init_all_oceanic = np.hstack((chl_init_all_oceanic, chl_init_temp))
+        chl_peak_all_oceanic = np.hstack((chl_peak_all_oceanic, chl_peak_temp))
+        chl_term_all_oceanic = np.hstack((chl_term_all_oceanic, chl_term_temp))
+        chl_max_all_oceanic = np.hstack((chl_max_all_oceanic, chl_max_temp))
+        chl_area_all_oceanic = np.hstack((chl_area_all_oceanic, chl_area_temp))
+#%% Plot
+cmap_data = np.loadtxt("erdc_iceFire.txt")
+cmap_new = LinearSegmentedColormap.from_list('my_colormap', cmap_data)
+sns.heatmap([chl_init_all_gerlache[1:], chl_peak_all_gerlache[1:], chl_term_all_gerlache[1:],
+             chl_init_all_gerlache[1:], chl_peak_all_gerlache[1:], chl_term_all_gerlache[1:],
+             chl_init_all_bransfield[1:], chl_peak_all_bransfield[1:], chl_term_all_bransfield[1:],
+             chl_init_all_oceanic[1:], chl_peak_all_oceanic[1:], chl_term_all_oceanic[1:]], square=True, annot=True,
+            vmin=1, vmax=12, cmap=cmap_new, cbar_kws={"fraction":0.025, "pad":0.05})
+plt.yticks(ticks=np.arange(0.5, 12), labels = ['INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM',
+                                               'INIT', 'PEAK', 'TERM'], rotation = 360)
+plt.xticks(ticks=np.arange(0.5, 23), labels = ['99', '00', '01', '02', '03', '04',
+                                                  '05', '06', '07', '08', '09', '10',
+                                                  '11', '12', '13', '14', '15', '16',
+                                                  '17', '18', '19', '20', '21'])
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\Bransfield_8day_cycle.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\phenologycomparison_percluster.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
+#%% Test if there are temporal trends for each metric
+a = chl_peak_all_oceanic+3
+a[a==13] = 1
+a[a==14] = 2
+a[a==15] = 3
+a
+stats.linregress(np.arange(1999, 2022)[~np.isnan(a[1:])], a[1:][~np.isnan(a[1:])])
+
+#%% Plot 
+plt.scatter(chl_max_all_gerlache[1:], np.full((23), 4), c=np.arange(1999, 2022), cmap=plt.cm.Blues, edgecolors='k', s=100)
+plt.scatter(chl_max_all_gerlache[1:], np.full((23), 3), c=np.arange(1999, 2022), cmap=plt.cm.Reds, edgecolors='k', s=100)
+plt.scatter(chl_max_all_bransfield[1:], np.full((23), 2), c=np.arange(1999, 2022), cmap=plt.cm.Purples, edgecolors='k', s=100)
+plt.scatter(chl_max_all_oceanic[1:], np.full((23), 1), c=np.arange(1999, 2022), cmap=plt.cm.Yellows, edgecolors='k', s=100)
 
 
-
-
-
-
-
-
-
-
-
-
-
+stats.linregress(np.arange(1999, 2022)[~np.isnan(chl_area_all_gerlache[1:])], chl_area_all_gerlache[1:][~np.isnan(chl_area_all_gerlache[1:])])
 
 
 #%%
-# Test outliers for weddell_cluster
+# Test outliers for gerlache_cluster
 #weddell_cluster = is_outlier(weddell_cluster, thresh=2.5)
 #weddell_cluster = median_filter(weddell_cluster, size=30)
 #t = weddell_cluster*np.nan
@@ -710,7 +1134,7 @@ plt.xlim(3,10)
 plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
 plt.legend(fontsize=12, loc=2)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\Weddell_meancycle_errorbar.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\Weddell_meancycle_errorbar.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%% Separar para o cluster 2 (Gerlache)
@@ -995,7 +1419,7 @@ plt.xlim(3,10)
 plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
 plt.legend(fontsize=12, loc=2)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\gerlache_meancycle_errorbar.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\gerlache_meancycle_errorbar.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%% Separar para o cluster 3 (Oceanic)
@@ -1281,7 +1705,7 @@ plt.xlim(3,10)
 plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
 plt.legend(fontsize=12, loc=1)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\oceanic_meancycle.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\oceanic_meancycle.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%% Separar para o cluster 4 (Bransfield)
@@ -1567,7 +1991,7 @@ plt.xlim(3,10)
 plt.ylabel('Chl $a$ (mg m$^{-3}$)', fontsize=14)
 plt.legend(fontsize=12, loc=2)
 plt.tight_layout()
-graphs_dir = 'C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\bransfield_meancycle_errorbar.png'
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarcticpeninsula-trends-2021\\analysis\\chl\\clustering\\bransfield_meancycle_errorbar.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%% Calculate trends for each month or summer (Nov-Mar)
