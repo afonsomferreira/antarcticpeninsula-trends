@@ -190,8 +190,8 @@ gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black
 cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
 #cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
 cbar.set_label('Correlation', fontsize=14)
-map.contour(lon, lat, chl_summertrend19992020, levels = [0], colors='k',
-            transform=ccrs.PlateCarree(), linewidths=.5, linestyles='--')
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels=[0], colors='k',
+#            transform=ccrs.PlateCarree(), linewidths=.5, linestyles='--')
 #plt.contour(X, Y, Z, levels=[0.5, 0.75], colors=['black','cyan'])
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
 map.coastlines(resolution='10m', color='black', linewidth=1)
@@ -202,5 +202,32 @@ plt.tight_layout()
 graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\Fig6_CHLSAM.png'
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
-
+#%%
+xx, yy = np.meshgrid(lon, lat)
+xx = xx[~np.isnan(chl_summertrend19992020_significant)]
+yy = yy[~np.isnan(chl_summertrend19992020_significant)]
+plt.figure(figsize=(6,6))
+map = plt.axes(projection=ccrs.AzimuthalEquidistant(central_longitude=-60, central_latitude=-62))
+map.set_extent([-67, -53, -67, -60])
+f1 = map.pcolormesh(lon, lat, chl_summertrend19992020_significant[:-1, :-1], transform=ccrs.PlateCarree(), shading='flat', vmin=-1, vmax=1,
+                    cmap=cmocean.cm.balance, zorder=0)
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels=[0, 0.01], colors='black', zorder=1, transform=ccrs.PlateCarree())
+#map.plot(xx,yy,'k*', markeredgewidth=1, markersize=.5, transform=ccrs.PlateCarree(), alpha=1)
+#map.scatter(xx, yy, 2, transform=ccrs.PlateCarree(), c='k', marker='.', edgecolors='none', alpha=0.5)
+gl = map.gridlines(draw_labels=True, alpha=0.5, linestyle='dotted', color='black')
+cbar = plt.colorbar(f1, fraction=0.04, pad=0.1)
+#cbar.ax.set_yticklabels(['0.1', '0.5', '1', '3', '10'], fontsize=14)
+cbar.set_label('Correlation', fontsize=14)
+#map.contour(lon, lat, chl_summertrend19992020_significant, levels=[0], colors='k',
+#            transform=ccrs.PlateCarree(), linewidths=.5, linestyles='--')
+#plt.contour(X, Y, Z, levels=[0.5, 0.75], colors=['black','cyan'])
+#cbar.set_label('Valid Pixels (%)', fontsize=14)
+map.coastlines(resolution='10m', color='black', linewidth=1)
+map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
+                                        edgecolor='k',
+                                        facecolor=cartopy.feature.COLORS['land']))
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\Fig6_CHLSAM.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
 

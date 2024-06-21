@@ -29,7 +29,7 @@ from scipy.ndimage import median_filter
 from scipy.interpolate import interp1d
 def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
-    new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
+    new_date = datetime.datetime(1970, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
 def is_outlier(points, thresh=3.5):
     """
@@ -68,8 +68,21 @@ os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigo
 fh = np.load('sst-seaice_19972021_updated.npz', allow_pickle=True)
 lat_sst = fh['lat']
 lon_sst = fh['lon']
-sst = fh['sst']
-time_date_sst = fh['time_date']
+sst_1 = fh['sst']
+time_date_sst_1 = fh['time_date']
+fh = Dataset('sst-seaice_2022.nc', mode='r')
+sst_2 = np.array(fh['analysed_sst'])
+sst_2[sst_2 == -32768] = np.nan
+sst_2 = sst_2-273.15
+sst_2 = np.swapaxes(np.swapaxes(sst_2, 0, 2), 0, 1)
+sst_2 = sst_2[1:, :, :]
+time_sst_2 = np.array(fh['time'])
+#Converts to datetime
+time_date_sst_2 = np.empty((len(time_sst_2)), dtype=object)
+for i in range(0, len(time_sst_2)):
+    time_date_sst_2[i] = serial_date_to_string(int(time_sst_2[i]))
+sst = np.dstack((sst_1, sst_2))
+time_date_sst = np.hstack((time_date_sst_1, time_date_sst_2))
 time_date_years_sst = np.empty_like(time_date_sst)
 time_date_months_sst = np.empty_like(time_date_sst)
 for i in range(0, len(time_date_sst)):
@@ -85,15 +98,30 @@ os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigo
 fh = np.load('sst-seaice_19972021_updated.npz', allow_pickle=True)
 #lat_seaice = fh['lat']
 #lon_seaice = fh['lon']
-seaice = fh['seaice']
-seaice = seaice*100
+seaice_1 = fh['seaice']
+seaice_1 = seaice_1*100
+fh = Dataset('sst-seaice_2022.nc', mode='r')
+seaice_2 = np.array(fh['sea_ice_fraction'])
+seaice_2[seaice_2 == -128] = np.nan
+seaice_2 = np.swapaxes(np.swapaxes(seaice_2, 0, 2), 0, 1)
+seaice_2 = seaice_2[1:, :, :]
+seaice_2 = seaice_2*100
+seaice = np.dstack((seaice_1, seaice_2)) 
 #%% PAR
 os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\par\\')
 fh = np.load('par_19972021_new.npz', allow_pickle=True)
 lat_par = fh['lat']
 lon_par = fh['lon']
-par = fh['par']
-time_date_par = fh['time_date']
+par_1 = fh['par']
+time_date_par_1 = fh['time_date']
+fh = np.load('par_2022.npz', allow_pickle=True)
+lat_par_2 = fh['lat']
+lon_par_2 = fh['lon']
+par_2 = fh['par']
+par_2 = par_2[1:,:,:]
+time_date_par_2 = fh['time_date']
+par = np.dstack((par_1, par_2))
+time_date_par = np.hstack((time_date_par_1, time_date_par_2))
 time_date_years_par = np.empty_like(time_date_par)
 time_date_months_par = np.empty_like(time_date_par)
 for i in range(0, len(time_date_par)):

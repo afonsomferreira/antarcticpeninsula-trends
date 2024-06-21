@@ -108,7 +108,7 @@ graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\ar
 plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
 plt.close()
 #%% Gather in-situ data and plot them in same plot
-os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-oscar-2023\\resources\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-oscar-sizeclassespigments-2023\\resources\\')
 matchups_fullhplc = pd.read_csv('hplc_fulldataframe_10May2023.csv', sep=',', index_col=0)
 matchups_lat = matchups_fullhplc['Latitude'].values
 matchups_lon = matchups_fullhplc['Longitude'].values
@@ -196,15 +196,15 @@ for i in np.arange(1998, 2023):
         matchups_GES_chl = np.hstack((matchups_GES_chl, matchups_GES_chltemp))     
         matchups_GES_chl_std = np.hstack((matchups_GES_chl_std, matchups_GES_chltemp_std))        
 #%% GES September to April # Significant
-plt.plot(np.arange(1992, 2023), matchups_GES_chl)
-plt.plot(np.arange(1992, 2023), matchups_GES_chlnumber)
+plt.plot(np.arange(1998, 2023), matchups_GES_chl)
+plt.plot(np.arange(1998, 2023), matchups_GES_chlnumber)
 # Remove years with less than 10 data points
 #matchups_GES_chl[matchups_GES_chlnumber<10] = np.nan
 good_years_GES = ~np.logical_or(np.isnan(np.arange(1998, 2023)), np.isnan(matchups_GES_chl))
 stats.spearmanr(np.arange(1998, 2023)[good_years_GES], matchups_GES_chl[good_years_GES])
 #%% BRA September to April # Not Significant
-plt.plot(np.arange(1992, 2023), matchups_BRA_chl)
-plt.plot(np.arange(1992, 2023), matchups_BRA_chlnumber)
+plt.plot(np.arange(1998, 2023), matchups_BRA_chl)
+plt.plot(np.arange(1998, 2023), matchups_BRA_chlnumber)
 #matchups_BRA_chl[matchups_BRA_chlnumber<10] = np.nan
 good_years_BRA = ~np.logical_or(np.isnan(np.arange(1998, 2023)), np.isnan(matchups_BRA_chl))
 stats.spearmanr(np.arange(1998, 2023)[good_years_BRA], matchups_BRA_chl[good_years_BRA])
@@ -228,242 +228,23 @@ plt.ylabel('Chl-$\it{a}$ (mgm$^{-3}$)', fontsize=14)
 plt.legend(loc=0, fontsize=14)
 plt.tight_layout()
 graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\chl_trends_insitu.png'
-#plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
-#plt.close()
-
-
-
-#%% Count number of samples per month
-## BRA
-# Keep only after 1998
-matchups_BRA_after1998 = matchups_BRA[matchups_BRA.index.year > 1997]
-BRA_sepnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 9], axis=0)
-BRA_octnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 10], axis=0)
-BRA_novnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 11], axis=0)
-BRA_decnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 12], axis=0)
-BRA_jannumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 1], axis=0)
-BRA_febnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 2], axis=0)
-BRA_marnumber = np.size(matchups_BRA_after1998[matchups_BRA_after1998.index.month == 3], axis=0)
-## GES
-# Keep only after 1998
-matchups_GES_after1998 = matchups_GES[matchups_GES.index.year > 1997]
-GES_sepnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 9], axis=0)
-GES_octnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 10], axis=0)
-GES_novnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 11], axis=0)
-GES_decnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 12], axis=0)
-GES_jannumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 1], axis=0)
-GES_febnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 2], axis=0)
-GES_marnumber = np.size(matchups_GES_after1998[matchups_GES_after1998.index.month == 3], axis=0)
-#%%
-#%% Try averaging each September-April
-# September
-for i in np.arange(1998, 2023):
-    ## BRA
-    matchups_BRA_sep = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 9)]
-    # Average chla and count number of data
-    matchups_BRA_chltemp = np.nanmean(matchups_BRA_sep['chla'].values)
-    matchups_BRA_chltemp_std = np.nanstd(matchups_BRA_sep['chla'].values)
-#    matchups_BRA_chlnumber_temp = np.size(matchups_BRA_chltemp)
-    if np.isnan(matchups_BRA_chltemp):
-        matchups_BRA_chlnumber_temp = 0
-    else:
-        matchups_BRA_chlnumber_temp = len(matchups_BRA_sep)        
-    # Join results
-    if i == 1998:
-        matchups_BRA_chlnumber = matchups_BRA_chlnumber_temp
-        matchups_BRA_chl = matchups_BRA_chltemp
-        matchups_BRA_chl_std = matchups_BRA_chltemp_std
-    else:
-        matchups_BRA_chlnumber = np.hstack((matchups_BRA_chlnumber, matchups_BRA_chlnumber_temp))
-        matchups_BRA_chl = np.hstack((matchups_BRA_chl, matchups_BRA_chltemp))  
-        matchups_BRA_chl_std = np.hstack((matchups_BRA_chl_std, matchups_BRA_chltemp_std))        
-    ## GES
-    matchups_GES_sep = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 9)]
-    # Average chla and count number of data
-    matchups_GES_chltemp = np.nanmean(matchups_GES_sep['chla'].values)
-    matchups_GES_chltemp_std = np.nanstd(matchups_GES_sep['chla'].values)
-#    matchups_GES_chlnumber_temp = np.size(matchups_GES_chltemp)
-    if np.isnan(matchups_GES_chltemp):
-        matchups_GES_chlnumber_temp = 0
-    else:
-        matchups_GES_chlnumber_temp = len(matchups_GES_sep)
-    # Join results
-    if i == 1998:
-        matchups_GES_chlnumber = matchups_GES_chlnumber_temp
-        matchups_GES_chl = matchups_GES_chltemp
-        matchups_GES_chl_std = matchups_GES_chltemp_std
-
-    else:
-        matchups_GES_chlnumber = np.hstack((matchups_GES_chlnumber, matchups_GES_chlnumber_temp))
-        matchups_GES_chl = np.hstack((matchups_GES_chl, matchups_GES_chltemp))     
-        matchups_GES_chl_std = np.hstack((matchups_GES_chl_std, matchups_GES_chltemp_std))      
-#%%
-# October
-for i in np.arange(1998, 2023):
-    ## BRA
-    matchups_BRA_sep = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 10)]
-    # Average chla and count number of data
-    matchups_BRA_chltemp = np.nanmean(matchups_BRA_sep['chla'].values)
-    matchups_BRA_chltemp_std = np.nanstd(matchups_BRA_sep['chla'].values)
-#    matchups_BRA_chlnumber_temp = np.size(matchups_BRA_chltemp)
-    if np.isnan(matchups_BRA_chltemp):
-        matchups_BRA_chlnumber_temp = 0
-    else:
-        matchups_BRA_chlnumber_temp = len(matchups_BRA_sep)        
-    # Join results
-    if i == 1998:
-        matchups_BRA_chlnumber = matchups_BRA_chlnumber_temp
-        matchups_BRA_chl = matchups_BRA_chltemp
-        matchups_BRA_chl_std = matchups_BRA_chltemp_std
-    else:
-        matchups_BRA_chlnumber = np.hstack((matchups_BRA_chlnumber, matchups_BRA_chlnumber_temp))
-        matchups_BRA_chl = np.hstack((matchups_BRA_chl, matchups_BRA_chltemp))  
-        matchups_BRA_chl_std = np.hstack((matchups_BRA_chl_std, matchups_BRA_chltemp_std))        
-for i in np.arange(1998, 2023):
-    ## GES
-    matchups_GES_sep = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 10)]
-    # Average chla and count number of data
-    matchups_GES_chltemp = np.nanmean(matchups_GES_sep['chla'].values)
-    matchups_GES_chltemp_std = np.nanstd(matchups_GES_sep['chla'].values)
-#    matchups_GES_chlnumber_temp = np.size(matchups_GES_chltemp)
-    if np.isnan(matchups_GES_chltemp):
-        matchups_GES_chlnumber_temp = 0
-    else:
-        matchups_GES_chlnumber_temp = len(matchups_GES_sep)        
-    # Join results
-    if i == 1998:
-        matchups_GES_chlnumber = matchups_GES_chlnumber_temp
-        matchups_GES_chl = matchups_GES_chltemp
-        matchups_GES_chl_std = matchups_GES_chltemp_std
-    else:
-        matchups_GES_chlnumber = np.hstack((matchups_GES_chlnumber, matchups_GES_chlnumber_temp))
-        matchups_GES_chl = np.hstack((matchups_GES_chl, matchups_GES_chltemp))  
-        matchups_GES_chl_std = np.hstack((matchups_GES_chl_std, matchups_GES_chltemp_std))     
-#%%
-# November
-for i in np.arange(1998, 2023):
-    ## BRA
-    matchups_BRA_sep = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 11)]
-    # Average chla and count number of data
-    matchups_BRA_chltemp = np.nanmean(matchups_BRA_sep['chla'].values)
-    matchups_BRA_chltemp_std = np.nanstd(matchups_BRA_sep['chla'].values)
-#    matchups_BRA_chlnumber_temp = np.size(matchups_BRA_chltemp)
-    if np.isnan(matchups_BRA_chltemp):
-        matchups_BRA_chlnumber_temp = 0
-    else:
-        matchups_BRA_chlnumber_temp = len(matchups_BRA_sep)        
-    # Join results
-    if i == 1998:
-        matchups_BRA_chlnumber = matchups_BRA_chlnumber_temp
-        matchups_BRA_chl = matchups_BRA_chltemp
-        matchups_BRA_chl_std = matchups_BRA_chltemp_std
-    else:
-        matchups_BRA_chlnumber = np.hstack((matchups_BRA_chlnumber, matchups_BRA_chlnumber_temp))
-        matchups_BRA_chl = np.hstack((matchups_BRA_chl, matchups_BRA_chltemp))  
-        matchups_BRA_chl_std = np.hstack((matchups_BRA_chl_std, matchups_BRA_chltemp_std))        
-for i in np.arange(1998, 2023):
-    ## GES
-    matchups_GES_sep = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 11)]
-    # Average chla and count number of data
-    matchups_GES_chltemp = np.nanmean(matchups_GES_sep['chla'].values)
-    matchups_GES_chltemp_std = np.nanstd(matchups_GES_sep['chla'].values)
-#    matchups_GES_chlnumber_temp = np.size(matchups_GES_chltemp)
-    if np.isnan(matchups_GES_chltemp):
-        matchups_GES_chlnumber_temp = 0
-    else:
-        matchups_GES_chlnumber_temp = len(matchups_GES_sep)        
-    # Join results
-    if i == 1998:
-        matchups_GES_chlnumber = matchups_GES_chlnumber_temp
-        matchups_GES_chl = matchups_GES_chltemp
-        matchups_GES_chl_std = matchups_GES_chltemp_std
-    else:
-        matchups_GES_chlnumber = np.hstack((matchups_GES_chlnumber, matchups_GES_chlnumber_temp))
-        matchups_GES_chl = np.hstack((matchups_GES_chl, matchups_GES_chltemp))  
-        matchups_GES_chl_std = np.hstack((matchups_GES_chl_std, matchups_GES_chltemp_std))     
-#%%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#%%
-for i in np.arange(1998, 2023):
-    ## BRA
-    matchups_BRA_sep = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 9)]
-    matchups_BRA_oct = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 10)]
-    matchups_BRA_nov = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 11)]
-    matchups_BRA_dec = matchups_BRA[(matchups_BRA.index.year == i-1) & (matchups_BRA.index.month == 12)]
-    matchups_BRA_jan = matchups_BRA[(matchups_BRA.index.year == i) & (matchups_BRA.index.month == 1)]
-    matchups_BRA_feb = matchups_BRA[(matchups_BRA.index.year == i) & (matchups_BRA.index.month == 2)]
-    matchups_BRA_mar = matchups_BRA[(matchups_BRA.index.year == i) & (matchups_BRA.index.month == 3)]
-    matchups_BRA_apr = matchups_BRA[(matchups_BRA.index.year == i) & (matchups_BRA.index.month == 4)]
-    # Join all
-    matchups_BRA_yeartemp = pd.concat([matchups_BRA_sep, matchups_BRA_oct, matchups_BRA_nov, matchups_BRA_dec,
-              matchups_BRA_jan, matchups_BRA_feb, matchups_BRA_mar, matchups_BRA_apr])
-    # Average chla and count number of data
-    matchups_BRA_chltemp = np.nanmean(matchups_BRA_yeartemp['chla'].values)
-    matchups_BRA_chltemp_std = np.nanstd(matchups_BRA_yeartemp['chla'].values)
-#    matchups_BRA_chlnumber_temp = np.size(matchups_BRA_chltemp)
-    if np.isnan(matchups_BRA_chltemp):
-        matchups_BRA_chlnumber_temp = 0
-    else:
-        matchups_BRA_chlnumber_temp = len(matchups_BRA_yeartemp)        
-    # Join results
-    if i == 1998:
-        matchups_BRA_chlnumber = matchups_BRA_chlnumber_temp
-        matchups_BRA_chl = matchups_BRA_chltemp
-        matchups_BRA_chl_std = matchups_BRA_chltemp_std
-    else:
-        matchups_BRA_chlnumber = np.hstack((matchups_BRA_chlnumber, matchups_BRA_chlnumber_temp))
-        matchups_BRA_chl = np.hstack((matchups_BRA_chl, matchups_BRA_chltemp))  
-        matchups_BRA_chl_std = np.hstack((matchups_BRA_chl_std, matchups_BRA_chltemp_std))        
-    ## GES
-    matchups_GES_sep = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 9)]
-    matchups_GES_oct = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 10)]
-    matchups_GES_nov = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 11)]
-    matchups_GES_dec = matchups_GES[(matchups_GES.index.year == i-1) & (matchups_GES.index.month == 12)]
-    matchups_GES_jan = matchups_GES[(matchups_GES.index.year == i) & (matchups_GES.index.month == 1)]
-    matchups_GES_feb = matchups_GES[(matchups_GES.index.year == i) & (matchups_GES.index.month == 2)]
-    matchups_GES_mar = matchups_GES[(matchups_GES.index.year == i) & (matchups_GES.index.month == 3)]
-    matchups_GES_apr = matchups_GES[(matchups_GES.index.year == i) & (matchups_GES.index.month == 4)]
-    # Join all
-    matchups_GES_yeartemp = pd.concat([matchups_GES_sep, matchups_GES_oct, matchups_GES_nov, matchups_GES_dec,
-              matchups_GES_jan, matchups_GES_feb, matchups_GES_mar, matchups_GES_apr])
-    # Average chla and count number of data
-    matchups_GES_chltemp = np.nanmean(matchups_GES_yeartemp['chla'].values)
-    matchups_GES_chltemp_std = np.nanstd(matchups_GES_yeartemp['chla'].values)
-#    matchups_GES_chlnumber_temp = np.size(matchups_GES_chltemp)
-    if np.isnan(matchups_GES_chltemp):
-        matchups_GES_chlnumber_temp = 0
-    else:
-        matchups_GES_chlnumber_temp = len(matchups_GES_yeartemp)
-    # Join results
-    if i == 1998:
-        matchups_GES_chlnumber = matchups_GES_chlnumber_temp
-        matchups_GES_chl = matchups_GES_chltemp
-        matchups_GES_chl_std = matchups_GES_chltemp_std
-
-    else:
-        matchups_GES_chlnumber = np.hstack((matchups_GES_chlnumber, matchups_GES_chlnumber_temp))
-        matchups_GES_chl = np.hstack((matchups_GES_chl, matchups_GES_chltemp))     
-        matchups_GES_chl_std = np.hstack((matchups_GES_chl_std, matchups_GES_chltemp_std))      
-
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+#%% Bar plot
+bransfield_n = [16, 40, 35, 0, 418, 389, 92, 5]
+plt.bar(x = np.arange(1, 9), height=bransfield_n, color='#6a984e')
+plt.xticks(ticks = np.arange(1, 9), labels=['Sep', 'Oct', ' Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'], fontsize=14)
+plt.ylabel('In-situ Samples', fontsize=14)
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\chl_samplesinsitu_bransfield.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+gerlache_n = [6, 59, 257, 307, 574, 296, 192, 18]
+plt.bar(x = np.arange(1, 9), height=gerlache_n, color='#2c4ea3')
+plt.xticks(ticks = np.arange(1, 9), labels=['Sep', 'Oct', ' Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'], fontsize=14)
+plt.ylabel('In-situ Samples', fontsize=14)
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\chl_samplesinsitu_gerlache.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
 #%%
 # BRA
 # Sep 16

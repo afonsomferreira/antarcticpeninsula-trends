@@ -13,18 +13,158 @@ import cartopy.crs as ccrs
 from matplotlib.patches import Polygon
 from matplotlib.path import Path
 from matplotlib.colors import ListedColormap
+from matplotlib.lines import Line2D
 from tqdm import tqdm
 import seaborn as sns
 from scipy import stats
 from netCDF4 import Dataset
 import datetime
-import cmocean
+#import cmocean
 def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
 #%%
-os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-oscar-sizeclassespigments-2023\\resources\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\winds\\stations\\')
+stations_pd = pd.read_csv('windstations.csv', sep=';')
+stations_year = stations_pd['Year']
+stations_month = stations_pd['Month']
+stations_datetime = np.empty_like(stations_year, dtype=object)
+for i in range(0, len(stations_datetime)):
+    stations_datetime[i] = datetime.datetime(year = int(stations_year[i]),
+                                              month = int(stations_month[i]),
+                                              day = 1)
+stations_pd.index = stations_datetime
+#palmer_pd = palmer_pd.drop(columns=['Date'])
+stations_pd_monthly = stations_pd.resample('M').mean()
+# Extract after 1998
+#palmer_pd_monthly = palmer_pd_monthly.iloc[288:588]
+## Palmer
+palmer_winds_monthly = stations_pd_monthly['Palmer']
+nonan_palmer = ~np.isnan(palmer_winds_monthly)
+stats.spearmanr(np.arange(1, 301)[nonan_palmer], palmer_winds_monthly[nonan_palmer])
+slope_pal, intercept_pal, rval_pal, pval_pal, __ = stats.linregress(np.arange(1, 301)[nonan_palmer], palmer_winds_monthly[nonan_palmer])
+## Marambio
+marambio_winds_monthly = stations_pd_monthly['Marambio']
+nonan_marambio = ~np.isnan(marambio_winds_monthly)
+stats.spearmanr(np.arange(1, 301)[nonan_marambio], marambio_winds_monthly[nonan_marambio])
+slope_pal, intercept_pal, rval_pal, pval_pal, __ = stats.linregress(np.arange(1, 301)[nonan_marambio], marambio_winds_monthly[nonan_marambio])
+## Great Wall
+greatwall_winds_monthly = stations_pd_monthly['Great Wall']
+nonan_greatwall = ~np.isnan(greatwall_winds_monthly)
+stats.spearmanr(np.arange(1, 301)[nonan_greatwall], greatwall_winds_monthly[nonan_greatwall])
+slope_pal, intercept_pal, rval_pal, pval_pal, __ = stats.linregress(np.arange(1, 301)[nonan_greatwall], greatwall_winds_monthly[nonan_greatwall])
+#%%
+fig, axs = plt.subplots(1, 1, figsize=(9,3))
+# Palmer
+axs.plot(np.arange(1, 301), palmer_winds_monthly, 'gray', linewidth=2, alpha=0.4, label='Monthly WSpeed')
+palmer_winds_monthly_movmean = palmer_winds_monthly.rolling(window=3).mean()
+axs.plot(np.arange(1, 301), palmer_winds_monthly_movmean, 'k', linewidth=1.5, alpha=1, label='WSpeed Mov. Mean')
+slope, intercept, rval, pval, __ = stats.linregress(np.arange(1, 301)[~np.isnan(palmer_winds_monthly)], palmer_winds_monthly[~np.isnan(palmer_winds_monthly)])
+axs.plot(np.arange(1, 301), np.arange(1, 301)*slope + intercept, c='k', linewidth=2, alpha=0.7, label='Linear Trend', linestyle='--')
+# Marambio
+axs.plot(np.arange(1, 301), marambio_winds_monthly, 'pink', linewidth=2, alpha=0.4, label='Monthly WSpeed')
+marambio_winds_monthly_movmean = marambio_winds_monthly.rolling(window=3).mean()
+axs.plot(np.arange(1, 301), marambio_winds_monthly_movmean, 'r', linewidth=1.5, alpha=1, label='WSpeed Mov. Mean')
+slope, intercept, rval, pval, __ = stats.linregress(np.arange(1, 301)[~np.isnan(marambio_winds_monthly)], marambio_winds_monthly[~np.isnan(marambio_winds_monthly)])
+axs.plot(np.arange(1, 301), np.arange(1, 301)*slope + intercept, c='r', linewidth=2, alpha=0.7, label='Linear Trend', linestyle='--')
+# Great Wall
+axs.plot(np.arange(1, 301), greatwall_winds_monthly, 'lightblue', linewidth=2, alpha=0.4, label='Monthly WSpeed')
+greatwall_winds_monthly_movmean = greatwall_winds_monthly.rolling(window=3).mean()
+axs.plot(np.arange(1, 301), greatwall_winds_monthly_movmean, 'darkblue', linewidth=1.5, alpha=1, label='WSpeed Mov. Mean')
+slope, intercept, rval, pval, __ = stats.linregress(np.arange(1, 301)[~np.isnan(greatwall_winds_monthly)], greatwall_winds_monthly[~np.isnan(greatwall_winds_monthly)])
+axs.plot(np.arange(1, 301), np.arange(1, 301)*slope + intercept, c='darkblue', linewidth=2, alpha=0.7, label='Linear Trend', linestyle='--')
+plt.xlim(0,301)
+plt.xticks(ticks=[24, 84, 144, 204, 264], labels=['2000','2005', '2010', '2015', '2020'], fontsize=14)
+plt.yticks(fontsize=12)
+#fig.legend(loc="upper right", bbox_to_anchor=(.93,1.18), bbox_transform=axs.transAxes, ncol=4, fontsize=12)
+axs.set_ylabel('Wind Speed [m/s]', fontsize=14)
+axs.set_xlabel('Time', fontsize=14)
+custom_lines = [Line2D([0], [0], color='k', lw=2),
+                Line2D([0], [0], color='r', lw=2),
+                Line2D([0], [0], color='darkblue', lw=2)]
+axs.legend(custom_lines, ['Palmer', 'Marambio', 'Great Wall'])
+
+plt.tight_layout()
+graphs_dir = 'C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\analysis\\SupFig4.png'
+plt.savefig(graphs_dir,format = 'png', bbox_inches = 'tight', dpi = 300)
+plt.close()
+
+#%%
+
+
+
+
+
+
+#%%
+
+
+
+
+
+
+
+        meiv2_months = np.arange(1,13)
+        meiv2_years = np.repeat(elnino_pd[0][i], 12)
+    else:
+        meiv2 = np.hstack((meiv2, temp_elnino))
+        meiv2_months = np.hstack((meiv2_months, np.arange(1,13)))
+        meiv2_years = np.hstack((meiv2_years, np.repeat(elnino_pd[0][i], 12)))
+
+sam_daily = sam_pd['aao_index_cdas'].values
+time_date_years = sam_pd['year'].values
+time_date_months = sam_pd['month'].values
+time_date_days = sam_pd['day'].values
+#%% Average monthly
+time_date_sam_daily = np.empty_like(time_date_days, dtype=object)
+for i in range(0, len(time_date_sam_daily)):
+    time_date_sam_daily[i] = datetime.datetime(year = time_date_years[i],
+                                               month = time_date_months[i],
+                                               day = time_date_days[i])
+sam_pd_daily = pd.Series(data=sam_daily, index=time_date_sam_daily)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
+
+
+
+
+
+
+
+
+
+
+
+
+
 matchups_fullhplc = pd.read_csv('hplc_fulldataframe_10May2023.csv', sep=',', index_col=0)
 matchups_lat = matchups_fullhplc['Latitude'].values
 matchups_lon = matchups_fullhplc['Longitude'].values
@@ -64,7 +204,7 @@ map.add_feature(cartopy.feature.NaturalEarthFeature('physical', 'land', '50m',
                                         edgecolor='k',
                                         facecolor=cartopy.feature.COLORS['land']))
 #cbar.set_label('Valid Pixels (%)', fontsize=14)
-f1 = map.scatter(matchups_lon[matchups_cluster == 4], matchups_lat[matchups_cluster == 4], s=15, c='k',  transform=ccrs.PlateCarree(),
+f1 = map.scatter(matchups_lon[matchups_cluster == 2], matchups_lat[matchups_cluster == 2], s=15, c='k',  transform=ccrs.PlateCarree(),
                  edgecolor='k', linewidth=.3)
 plt.tight_layout()
 #%% Separate by cluster

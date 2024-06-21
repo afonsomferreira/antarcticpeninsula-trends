@@ -79,7 +79,7 @@ clusters_chl = fh['clusters']
 lat_clusters_chl = fh['lat']
 lon_clusters_chl = fh['lon']
 #%% SST
-os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\sst-seaice\\ostia\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\sst-seaice\\ostia\\old\\')
 fh = np.load('sst-seaice_19972021_updated.npz', allow_pickle=True)
 lat_sst = fh['lat']
 lon_sst = fh['lon']
@@ -91,7 +91,7 @@ clusters_sstseaice = fh['clusters']
 #lat_clusters_sstseaice = fh['lat']
 #lon_clusters_sstseaice = fh['lon']
 #%% Sea Ice
-os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\sst-seaice\\ostia\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\sst-seaice\\ostia\\old\\')
 fh = np.load('sst-seaice_19972021_updated.npz', allow_pickle=True)
 #lat_seaice = fh['lat']
 #lon_seaice = fh['lon']

@@ -61,7 +61,7 @@ def is_outlier(points, thresh=3.5):
 
     return modified_z_score > thresh
 #os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarctic-furseal-2021\\resources\\oc4so-chl\\')
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\oc4so_chl\\')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\oc4so_chl\\')
 ### Load data 1998-2020
 fh = np.load('chloc4so_19972021_10km.npz', allow_pickle=True)
 lat = fh['lat'][100:]

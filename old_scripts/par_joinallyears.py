@@ -21,7 +21,7 @@ def serial_date_to_string(srl_no):
     """Converts serial number time to datetime"""
     new_date = datetime.datetime(1981, 1, 1, 0, 0) + datetime.timedelta(seconds=srl_no)
     return new_date
-os.chdir('C:\\Users\\afons\\Documents\\artigos\\antarcticpeninsula-trends-2021\\resources\\par\\20202022')
+os.chdir('C:\\Users\\afons\\OneDrive - Universidade de Lisboa\\Documents\\artigos\\antarctic-peninsula-trends-2021\\resources\\par\\614198302\\')
 ### Load and join data
 files = os.listdir()
 for i in files:
@@ -57,6 +57,6 @@ for i in files:
         time_date = np.hstack((time_date, time_date_temp))
         #print(time_date_temp)
 
-np.savez_compressed('par_20202022', #sst=sst, #seaice=seaice,
+np.savez_compressed('par_2022', #sst=sst, #seaice=seaice,
                     time_date=time_date, par=par,
                     lat=lat, lon=lon)
